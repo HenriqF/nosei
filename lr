@@ -1,0 +1,23 @@
+[build]
+    run: go build main.go
+    end
+
+[clean]
+    run: del main.exe
+    end
+
+[run]
+    goto: build
+
+    silent: 0
+    run: .\main.exe
+    silent: 1
+
+    goto: clean
+    end
+
+
+
+[main]
+    goto: run
+    end
