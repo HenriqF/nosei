@@ -1,5 +1,5 @@
 [build]
-    run: go build main.go
+    run: go build main.go ruler.go create.go
     end
 
 [clean]
@@ -10,7 +10,8 @@
     goto: build
 
     silent: 0
-    run: .\main.exe
+    run: start cmd -ArgumentList /k telnet localhost 6767
+    run: .\main.exe _/rules.nos
     silent: 1
 
     goto: clean

@@ -3,15 +3,25 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"net"
-	"os"
 	"strings"
 )
 
-const (
-	data_name string = "data.txt"
+type table struct {
+	name  string
+	rules []string
+}
+
+var (
+	default_db_path string = "C:/Users/henri/Documentos/nosei"
+
+	recieving_rules bool = false
+	rule_input      string
+	nome_input      string
+	tabelas         []table
+
+	error_signal bool = false
 )
 
 func err_hand(err error, msg string) {
@@ -28,31 +38,54 @@ func nc_err_hand(err error, msg string) bool {
 	return false
 }
 
-func req_hand(c net.Conn, input_chain chan string) {
+func rule_builder(part string) {
+	if part == "end" {
+		recieving_rules = false
+		return
+	}
+
+	rule_input += (part + "\n")
+}
+
+func request_hand(c net.Conn) {
 	defer c.Close()
-	fmt.Printf("Conex: %v\n", c)
+	reader := bufio.NewReader(c)
 
-	red := bufio.NewReader(c)
 	for {
-		msg, err := red.ReadString('\n')
-
-		if err == io.EOF {
+		msg, err := reader.ReadString('\n')
+		if err != nil {
 			return
 		}
-		err_hand(err, "reader")
-
-		fmt.Printf("%v: %v\n", c, msg)
 
 		var echo string
+		msg_clear := strings.TrimSpace(msg)
 
-		d := strings.TrimSpace(msg)
-		if d == "PAROU" {
+		if recieving_rules {
+			rule_builder(msg_clear)
+
+			if !recieving_rules && !error_signal {
+				echo += parse_rules(rule_input)
+
+				for i := 0; i < len(tabelas); i++ {
+					fmt.Printf("TABELA| %v\n", tabelas[i].name)
+
+					for j := 0; j < len(tabelas[i].rules); j++ {
+						fmt.Printf("    REGRA| %v\n", tabelas[i].rules[j])
+					}
+					fmt.Printf("\n")
+				}
+
+				echo += create_db()
+			}
+		} else if msg_clear == "PAROU" {
 			return
-		} else if strings.HasPrefix(d, "WRITE ") {
-			resto := d[6:]
-			input_chain <- resto
+		} else if strings.HasPrefix(msg_clear, "NEW ") && len(msg_clear) >= 7 {
+			recieving_rules = true
+			error_signal = false
+			rule_input = ""
+			nome_input = msg_clear[4:]
 
-			echo = fmt.Sprintf("WROTE: [%v]\n", resto)
+			echo = fmt.Sprintf("Envie regras para [%v]...\n", nome_input)
 		}
 
 		_, err = c.Write([]byte(echo))
@@ -61,29 +94,16 @@ func req_hand(c net.Conn, input_chain chan string) {
 
 }
 
-func linewriter_init(file *os.File, ic chan string, ok chan bool) {
-	for line := range ic {
-		file.WriteString(line + "\n")
-	}
-
-	ok <- true
-}
-
 func main() {
-	file, _ := os.OpenFile(data_name, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	defer file.Close()
-
-	input_chain := make(chan string, 50)
-	lw_done := make(chan bool)
-	go linewriter_init(file, input_chain, lw_done)
-
 	listener, err := net.Listen("tcp", ":6767")
 	err_hand(err, "init")
 	defer listener.Close()
 
+	fmt.Printf("rodando: localhost:6767\n")
+
 	for {
 		c, err := listener.Accept()
 		err_hand(err, "accept")
-		go req_hand(c, input_chain)
+		request_hand(c)
 	}
 }

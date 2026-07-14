@@ -1,0 +1,10 @@
+
+[pessoa]
+    nome -> texto
+    info -> refs
+
+[dados]
+    cpf   -> texto
+    idade -> numero
+
+end

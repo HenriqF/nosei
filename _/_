@@ -1,0 +1,45 @@
+
+cliente: NOVO BD 
+servidor: mande regras
+cliente: regras
+servidor: criado.
+
+
+## imaginando isso:
+
+    [pessoa]
+        nome -> texto
+        info -> refs
+
+    [dados]
+        cpf   -> texto
+        idade -> numero
+
+
+
+
+
+
+
+
+
+    PASTAS:
+    bancodedados/
+        rules.txt -> tem as regras pra interpretacao
+
+        pessoa/
+            data/
+                data1.txt
+                data2.txt
+
+            auto_index
+            empty_space
+
+        dados/
+            data/
+                data1.txt
+                data2.txt
+
+            auto_index
+            empty_space
+
