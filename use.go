@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 )
 
 const int_size int = 4
@@ -49,6 +49,12 @@ func get_numero_bytes(numero int) string {
 
 	return string(bytes)
 }
+func get_bytes_numero(bytes string) int {
+
+	n := binary.BigEndian.Uint32([]byte(bytes))
+
+	return int(n)
+}
 
 func process_data_tipo(valor string, tipo regra_tipo) (string, error) {
 	switch tipo {
@@ -65,37 +71,88 @@ func process_data_tipo(valor string, tipo regra_tipo) (string, error) {
 	}
 }
 
-func prepare_data_files(table_path string) (string, int, error) {
+// ret:
+// Caminho do arquivo data.nsd
+// Tamanho do arquivo data.nsd
+// O index do proximo bloco em data.nsd
+func prepare_data_files(table_path string) (string, int, int, error) {
+
 	dataindex_path := filepath.Join(table_path, "dataindex.ns")
 	content, err := os.ReadFile(dataindex_path)
 	if err != nil {
-		return "", 0, err
+		return "", 0, 0, err
 	}
 
-	datafile_path := filepath.Join(table_path, "data", fmt.Sprintf("data%v.nsd", string(content)))
+	data_index := get_bytes_numero(string(content))
+
+	datafile_path := filepath.Join(table_path, "data", fmt.Sprintf("data%v.nsd", strconv.Itoa(data_index)))
 	fileinfo, err := os.Stat(datafile_path)
 	if err != nil {
-		return "", 0, err
+		return "", 0, 0, err
 	}
 
-	file_size := fileinfo.Size()
-
-	return datafile_path, int(file_size), nil
+	return datafile_path, int(fileinfo.Size()), data_index, nil
 }
 
-func update_autoindex(auto_index_path string, index int) (string, error) {
-	conteudo, err := os.ReadFile(auto_index_path)
+func update_file_index_header(file_path string, new_header string) error {
+	f, err := os.OpenFile(file_path, os.O_RDWR, 0644)
 	if err != nil {
-		error_signal = true
-		return "erro abrindo auto index\n", err
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteAt([]byte(new_header), 0)
+	if err != nil {
+		return err
 	}
 
-	linhas := strings.Split(string(conteudo), "\n")
-	index_autual, err := strconv.Atoi(linhas[0])
+	return nil
+}
+
+func append_to_file(file_path string, content string) error {
+	f, err := os.OpenFile(file_path, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		return "erro com numero auto index\n", err
+		return err
 	}
-	println("index:", index_autual)
+	defer f.Close()
+
+	_, err = f.Write([]byte(content))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// atualizar autoindex
+// primeira linha recebe 1
+// adiciona: [index da entrada][arquivo][pos no arquivo]
+func update_autoindex(auto_index_path string, datafile_index int, block_pos int) (string, error) {
+	file, err := os.Open(auto_index_path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	primeira_linha := make([]byte, int_size)
+	_, err = io.ReadFull(file, primeira_linha)
+	if err != nil {
+		return "", err
+	}
+
+	index_atual := get_bytes_numero(string(primeira_linha))
+
+	new_header := get_numero_bytes(index_atual + 1)
+	err = update_file_index_header(auto_index_path, new_header)
+	if err != nil {
+		return "", err
+	}
+
+	new_index := string(primeira_linha) + get_numero_bytes(datafile_index) + get_numero_bytes(block_pos)
+	err = append_to_file(auto_index_path, new_index)
+	if err != nil {
+		return "", err
+	}
 
 	return "ok\n", nil
 }
@@ -115,22 +172,22 @@ func get_tabela_index(nome string) (int, error) {
 	return tabela_index, nil
 }
 
-func inserir_banco(tabela string) (string, error) {
-	tabela_index, err := get_tabela_index(tabela)
+func inserir_banco(nome_tabela string) (string, error) {
+	tabela_index, err := get_tabela_index(nome_tabela)
 	if err != nil {
 		return "tabela nao existe\n", err
 	}
 
-	tabela_path := filepath.Join(using_bd_path, tabela)
-	auto_index_path := filepath.Join(tabela_path, "autoindex.ns")
+	tabela_path := filepath.Join(using_bd_path, nome_tabela)
+	autoindex_path := filepath.Join(tabela_path, "autoindex.ns")
 
-	datafile_path, datafile_length, err := prepare_data_files(tabela_path)
+	datafile_path, datafile_length, index_prox_bloco, err := prepare_data_files(tabela_path)
 	if err != nil {
 		return "erro com datafile", err
 	}
 
 	//PLACEHOLDER!!
-	dados := [...]string{"pedro", "6767676767676767"}
+	dados := [...]string{"penis", "2", "20"}
 	//PLACEHOLDER!!
 
 	qtd_rules := len(tabelas[tabela_index].rules)
@@ -138,8 +195,8 @@ func inserir_banco(tabela string) (string, error) {
 		return "tamanho de dados nao condiz com tabelas\n", errors.New("erro tamanho")
 	}
 
-	for i, d := range dados {
-		store, err := process_data_tipo(d, tabelas[tabela_index].rules[i].tipo)
+	for i := range dados {
+		store, err := process_data_tipo(dados[i], tabelas[tabela_index].rules[i].tipo)
 		if err != nil {
 			return "erro com dados para inserir", errors.New("sigma")
 		}
@@ -153,8 +210,8 @@ func inserir_banco(tabela string) (string, error) {
 	tamanho_total := int_size + int_size*qtd_rules
 	var cur_offset = tamanho_total + datafile_length
 
-	for i, d := range dados {
-		tamanho_total += len(d)
+	for i := range dados {
+		tamanho_total += len(dados[i])
 
 		if i > 0 {
 			bloco_headers += get_numero_bytes(cur_offset)
@@ -178,7 +235,7 @@ func inserir_banco(tabela string) (string, error) {
 
 	fmt.Println(bloco_data, len(bloco_data))
 
-	resp, err := update_autoindex(auto_index_path, datafile_length)
+	resp, err := update_autoindex(autoindex_path, index_prox_bloco, datafile_length)
 	if err != nil {
 		return resp, err
 	}

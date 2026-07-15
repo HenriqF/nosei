@@ -112,7 +112,7 @@ func handle_input(input string) string {
 	} else if input == "put" {
 		error_signal = false
 
-		echo, err = inserir_banco("pessoa")
+		echo, err = inserir_banco("porra")
 		if err != nil {
 			error_signal = true
 		}

@@ -71,9 +71,9 @@ func create_db() string {
 		data_index_path := filepath.Join(tabela_path, "dataindex.ns")
 		data_zero_path := filepath.Join(data_path, "data0.nsd")
 
-		create_file(index_path, "0")
+		create_file(index_path, get_numero_bytes(0))
 		create_file(free_path, "")
-		create_file(data_index_path, "0")
+		create_file(data_index_path, get_numero_bytes(0))
 		create_file(data_zero_path, "")
 	}
 
