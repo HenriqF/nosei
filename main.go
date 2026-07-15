@@ -42,7 +42,7 @@ var (
 	nome_input      string
 
 	//uso de banco
-	using_path string
+	using_bd_path string
 
 	//erro
 	error_signal bool = false
@@ -85,6 +85,8 @@ func finalize_rules() string {
 
 func handle_input(input string) string {
 	var echo string
+	var err error
+
 	if recieving_rules {
 		rule_builder(input)
 
@@ -107,6 +109,13 @@ func handle_input(input string) string {
 		nome_banco := input[5:]
 
 		echo = usar_banco(nome_banco)
+	} else if input == "put" {
+		error_signal = false
+
+		echo, err = inserir_banco("pessoa")
+		if err != nil {
+			error_signal = true
+		}
 	}
 
 	return echo

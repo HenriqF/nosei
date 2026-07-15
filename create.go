@@ -68,9 +68,13 @@ func create_db() string {
 
 		index_path := filepath.Join(tabela_path, "autoindex.ns")
 		free_path := filepath.Join(tabela_path, "vazioindex.ns")
+		data_index_path := filepath.Join(tabela_path, "dataindex.ns")
+		data_zero_path := filepath.Join(data_path, "data0.nsd")
 
 		create_file(index_path, "0")
 		create_file(free_path, "")
+		create_file(data_index_path, "0")
+		create_file(data_zero_path, "")
 	}
 
 	create_file(rule_path, regras_fix)

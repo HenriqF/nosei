@@ -23,14 +23,6 @@ servidor: criado.
         cpf   -> texto
         idade -> numero
 
-
-
-
-
-
-
-
-
     PASTAS:
     bancodedados/
         rules.txt -> tem as regras pra interpretacao
@@ -50,3 +42,17 @@ servidor: criado.
 
             auto_index
             empty_space
+
+
+inserir em pessoa:
+
+letras -> variavel
+numero -> variavel2
+
+
+
+datafile_size: 0
+
+ 0     4     8     12     17    (+ datafile_size)
+[21   ][12  ][17  ][pedro][6767]
+ 4     4     4     5      4

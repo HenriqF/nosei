@@ -11,7 +11,9 @@
 
     silent: 0
     //run: start cmd -ArgumentList /k telnet localhost 6767
+
     run: .\main.exe noweb
+    
     silent: 1
 
     goto: clean
