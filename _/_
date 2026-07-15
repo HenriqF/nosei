@@ -5,11 +5,19 @@ cliente: regras
 servidor: criado.
 
 
+
+// letras -> 
+// numero -> 
+// refere -> 
+
+
+
 ## imaginando isso:
 
     [pessoa]
-        nome -> texto
-        info -> refs
+        letras -> nome
+        numero -> idade
+        refere -> dados
 
     [dados]
         cpf   -> texto
@@ -42,4 +50,3 @@ servidor: criado.
 
             auto_index
             empty_space
-

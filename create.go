@@ -22,6 +22,7 @@ func path_exists(path string, is_folder bool) bool {
 	if info.IsDir() {
 		return is_folder
 	}
+
 	return !is_folder
 }
 
@@ -44,7 +45,7 @@ func create_file(path string, content string) {
 
 func create_db() string {
 	db_path := filepath.Join(default_db_path, nome_input)
-	rule_path := filepath.Join(db_path, "regras")
+	rule_path := filepath.Join(db_path, "regras.ns")
 
 	if path_exists(db_path, true) {
 		return fmt.Sprintf("banco já existe [%v]\n", db_path)
@@ -56,7 +57,7 @@ func create_db() string {
 	for i := 1; i < len(tabelas); i++ {
 		regras_fix += fmt.Sprintf("[%v]\n", tabelas[i].name)
 		for j := 0; j < len(tabelas[i].rules); j++ {
-			regras_fix += fmt.Sprintf("%v\n", tabelas[i].rules[j])
+			regras_fix += fmt.Sprintf("%v\n", tabelas[i].rules[j].comando)
 		}
 
 		tabela_path := filepath.Join(db_path, tabelas[i].name)
@@ -65,10 +66,10 @@ func create_db() string {
 		data_path := filepath.Join(tabela_path, "data")
 		create_folder(data_path)
 
-		index_path := filepath.Join(tabela_path, "autoindex")
-		free_path := filepath.Join(tabela_path, "vazioindex")
+		index_path := filepath.Join(tabela_path, "autoindex.ns")
+		free_path := filepath.Join(tabela_path, "vazioindex.ns")
 
-		create_file(index_path, "")
+		create_file(index_path, "0")
 		create_file(free_path, "")
 	}
 

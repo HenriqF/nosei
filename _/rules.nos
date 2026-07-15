@@ -1,10 +1,10 @@
-
 [pessoa]
-    nome -> texto
-    info -> refs
+    letras -> nome
+    refere -> dados
 
 [dados]
-    cpf   -> texto
-    idade -> numero
+    letras -> cpf
+    numero -> idade
+    binary -> foto
 
 end
