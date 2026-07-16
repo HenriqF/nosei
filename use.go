@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -36,24 +35,9 @@ func usar_banco(qual string) string {
 	if error_signal {
 		return "regras malformadas\n"
 	}
-	show_tabelas()
+	//show_tabelas()
 
 	return "usando\n"
-}
-
-func get_numero_bytes(numero int) string {
-	//return strconv.Itoa(numero)
-
-	bytes := make([]byte, int_size)
-	binary.BigEndian.PutUint32(bytes, uint32(numero))
-
-	return string(bytes)
-}
-func get_bytes_numero(bytes string) int {
-
-	n := binary.BigEndian.Uint32([]byte(bytes))
-
-	return int(n)
 }
 
 func process_data_tipo(valor string, tipo regra_tipo) (string, error) {
@@ -126,7 +110,7 @@ func append_to_file(file_path string, content string) error {
 
 // atualizar autoindex
 // primeira linha recebe 1
-// adiciona: [index da entrada][arquivo][pos no arquivo]
+// adiciona: [arquivo][index da entrada][pos no arquivo]
 func update_autoindex(auto_index_path string, datafile_index int, block_pos int) (string, error) {
 	file, err := os.Open(auto_index_path)
 	if err != nil {
@@ -134,13 +118,13 @@ func update_autoindex(auto_index_path string, datafile_index int, block_pos int)
 	}
 	defer file.Close()
 
-	primeira_linha := make([]byte, int_size)
-	_, err = io.ReadFull(file, primeira_linha)
+	bytes_index_atual := make([]byte, int_size)
+	_, err = io.ReadFull(file, bytes_index_atual)
 	if err != nil {
 		return "", err
 	}
 
-	index_atual := get_bytes_numero(string(primeira_linha))
+	index_atual := get_bytes_numero(string(bytes_index_atual))
 
 	new_header := get_numero_bytes(index_atual + 1)
 	err = update_file_index_header(auto_index_path, new_header)
@@ -148,7 +132,7 @@ func update_autoindex(auto_index_path string, datafile_index int, block_pos int)
 		return "", err
 	}
 
-	new_index := string(primeira_linha) + get_numero_bytes(datafile_index) + get_numero_bytes(block_pos)
+	new_index := get_numero_bytes(datafile_index) + string(bytes_index_atual) + get_numero_bytes(block_pos)
 	err = append_to_file(auto_index_path, new_index)
 	if err != nil {
 		return "", err
@@ -172,7 +156,7 @@ func get_tabela_index(nome string) (int, error) {
 	return tabela_index, nil
 }
 
-func inserir_banco(nome_tabela string) (string, error) {
+func inserir_banco(nome_tabela string, dados []string) (string, error) {
 	tabela_index, err := get_tabela_index(nome_tabela)
 	if err != nil {
 		return "tabela nao existe\n", err
@@ -183,12 +167,8 @@ func inserir_banco(nome_tabela string) (string, error) {
 
 	datafile_path, datafile_length, index_prox_bloco, err := prepare_data_files(tabela_path)
 	if err != nil {
-		return "erro com datafile", err
+		return "erro com datafile\n", err
 	}
-
-	//PLACEHOLDER!!
-	dados := [...]string{"penis", "2", "20"}
-	//PLACEHOLDER!!
 
 	qtd_rules := len(tabelas[tabela_index].rules)
 	if len(dados) != qtd_rules {
@@ -198,7 +178,7 @@ func inserir_banco(nome_tabela string) (string, error) {
 	for i := range dados {
 		store, err := process_data_tipo(dados[i], tabelas[tabela_index].rules[i].tipo)
 		if err != nil {
-			return "erro com dados para inserir", errors.New("sigma")
+			return "erro com dados para inserir\n", errors.New("sigma")
 		}
 		dados[i] = store
 	}
@@ -225,15 +205,13 @@ func inserir_banco(nome_tabela string) (string, error) {
 
 	file, err := os.OpenFile(datafile_path, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		return "erro abrindo datafile", err
+		return "erro abrindo datafile\n", err
 	}
 	defer file.Close()
 
 	if _, err := file.WriteString(bloco_data); err != nil {
-		return "erro escrevendo em datafile", err
+		return "erro escrevendo em datafile\n", err
 	}
-
-	fmt.Println(bloco_data, len(bloco_data))
 
 	resp, err := update_autoindex(autoindex_path, index_prox_bloco, datafile_length)
 	if err != nil {
@@ -241,4 +219,61 @@ func inserir_banco(nome_tabela string) (string, error) {
 	}
 
 	return "feito\n", nil
+}
+
+// return:
+// indexes, [[indexes arq.0] [indexes arq.1]...]
+func get_indexes_from_autoindex(autoindex_path string) ([][]string, error) {
+	content, err := os.ReadFile(autoindex_path)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := split_fixed(string(content[int_size:]), int_size*3)
+	if headers == nil {
+		return nil, errors.New("fudencio")
+	}
+
+	var indexes [][]string
+
+	for i := range headers {
+		current_file := get_bytes_numero(headers[i][:int_size])
+
+		for k := len(indexes) - 1; k < current_file; k++ {
+			var novo []string
+			indexes = append(indexes, novo)
+		}
+
+		indexes[current_file] = append(indexes[current_file], headers[i][int_size:])
+		//[arquivo][index da entrada][pos no arquivo]
+	}
+
+	return indexes, nil
+}
+
+func carregar_tabela(nome_tabela string) (string, error) {
+	tabela_generica = nil
+
+	//tabela_index, err := get_tabela_index(nome_tabela)
+	// if err != nil {
+	// 	return "tabela nao existe\n", err
+	// }
+
+	tabela_path := filepath.Join(using_bd_path, nome_tabela)
+	autoindex_path := filepath.Join(tabela_path, "autoindex.ns")
+
+	indexes, err := get_indexes_from_autoindex(autoindex_path)
+	if err != nil {
+		return "erro", err
+	}
+
+	for i := range indexes {
+		fmt.Printf("Arquivo: [%v] ->\n", i)
+
+		for j := range indexes[i] {
+			fmt.Printf("    %v\n", []byte(indexes[i][j]))
+		}
+	}
+
+	return "ok\n", nil
 }

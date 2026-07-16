@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"log"
 	"net"
@@ -42,11 +43,42 @@ var (
 	nome_input      string
 
 	//uso de banco
-	using_bd_path string
+	using_bd_path   string
+	tabela_generica [][]any
 
 	//erro
 	error_signal bool = false
 )
+
+// funcs ajuda
+func split_fixed(s string, n int) []string {
+	if len(s)%n != 0 {
+		return nil
+	}
+
+	var sigma []string
+	for i := 0; i < len(s); i += n {
+		sigma = append(sigma, s[i:i+n])
+	}
+
+	return sigma
+}
+
+func get_numero_bytes(numero int) string {
+	//return strconv.Itoa(numero)
+
+	bytes := make([]byte, int_size)
+	binary.BigEndian.PutUint32(bytes, uint32(numero))
+
+	return string(bytes)
+}
+
+func get_bytes_numero(bytes string) int {
+
+	n := binary.BigEndian.Uint32([]byte(bytes))
+
+	return int(n)
+}
 
 func err_hand(err error, msg string) {
 	if err != nil {
@@ -61,6 +93,8 @@ func nc_err_hand(err error, msg string) bool {
 	}
 	return false
 }
+
+//-----------
 
 func rule_builder(part string) {
 	if part == "end" {
@@ -112,10 +146,18 @@ func handle_input(input string) string {
 	} else if input == "put" {
 		error_signal = false
 
-		echo, err = inserir_banco("porra")
+		echo, err = inserir_banco("porra", []string{"pedrinho da bahia", "67", "69"})
 		if err != nil {
 			error_signal = true
 		}
+	} else if input == "get" {
+		error_signal = false
+
+		echo, err = carregar_tabela("porra")
+		if err != nil {
+			error_signal = true
+		}
+
 	}
 
 	return echo
@@ -155,15 +197,14 @@ func terminal_request_hand() {
 }
 
 func main() {
-	web := true
+	mode := "web"
 
 	if len(os.Args) > 1 {
-		if os.Args[1] == "noweb" {
-			web = false
-		}
+		mode = os.Args[1]
 	}
 
-	if web {
+	switch mode {
+	case "web":
 		listener, err := net.Listen("tcp", ":6767")
 		err_hand(err, "init")
 		defer listener.Close()
@@ -175,10 +216,31 @@ func main() {
 			err_hand(err, "accept")
 			request_hand(c)
 		}
-	} else {
+
+	case "terminal":
 		fmt.Printf("rodando: terminal\n")
 
-		terminal_request_hand()
+		usar_banco("puta")
+		echo, _ := carregar_tabela("tabela")
+		fmt.Println(echo)
+
+		//terminal_request_hand()
+
+	case "pop":
+		fmt.Println("popin")
+		fmt.Println(usar_banco("puta"))
+
+		for i := 0; i < 100; i++ {
+			_, err := inserir_banco("tabela", []string{
+				fmt.Sprintf("pedrinho#%v", i),
+				fmt.Sprintf("%v", i+67),
+				fmt.Sprintf("%v", i+69),
+			})
+
+			err_hand(err, "vai saber")
+		}
+
+		fmt.Println("ok!")
 	}
 
 }
