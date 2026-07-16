@@ -8,25 +8,28 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 )
+
+const default_num_size int = 4
 
 type regra_tipo int
 
 const (
 	tipo_texto regra_tipo = iota
 	tipo_numero
-	tipo_binary
 	tipo_referencia
 	tipo_nada
 )
 
 type rule struct {
-	comando string
-	valor   string
-	tipo    regra_tipo
+	comando   string
+	descritor string
+	bytes     int
+	tipo      regra_tipo
 }
 
-type table struct {
+type tabela struct {
 	name  string
 	rules []rule
 }
@@ -35,9 +38,10 @@ var (
 	default_db_path string = "C:/Users/henri/Documentos/nosei"
 
 	// tabelas
-	tabelas []table
+	tabelas []tabela
 
 	//criacao de banco
+	nomes_usados    map[string]bool
 	recieving_rules bool = false
 	rule_input      string
 	nome_input      string
@@ -67,7 +71,7 @@ func split_fixed(s string, n int) []string {
 func get_numero_bytes(numero int) string {
 	//return strconv.Itoa(numero)
 
-	bytes := make([]byte, int_size)
+	bytes := make([]byte, default_num_size)
 	binary.BigEndian.PutUint32(bytes, uint32(numero))
 
 	return string(bytes)
@@ -112,11 +116,10 @@ func rule_builder(part string) {
 }
 
 func finalize_rules() string {
-	echo := parse_rules(rule_input)
+	echo, err := parse_rules(rule_input)
 
-	if !error_signal {
+	if err == nil {
 		show_tabelas()
-
 		echo += create_db()
 	}
 
@@ -226,25 +229,32 @@ func main() {
 	case "terminal":
 		fmt.Printf("rodando: terminal\n")
 
-		usar_banco("puta")
+		usar_banco("beta")
+		init := time.Now()
 		echo, _ := carregar_tabela("tabela")
+		fmt.Println(time.Since(init))
 		fmt.Println(echo)
 
-		//terminal_request_hand()
+		// terminal_request_hand()
 
 	case "pop":
 		fmt.Println("popin")
-		fmt.Println(usar_banco("puta"))
+		fmt.Println(usar_banco("beta"))
 
-		for i := 0; i < 100; i++ {
+		init := time.Now()
+		for i := 0; i < 1000; i++ {
 			_, err := inserir_banco("tabela", []string{
 				fmt.Sprintf("pedrinho#%v", i),
 				fmt.Sprintf("%v", i+67),
+				fmt.Sprintf("Eu gosto muito de %v", i+3),
 				fmt.Sprintf("%v", i+69),
+				fmt.Sprintf("%v", i+420),
+				fmt.Sprintf("A#%v", i),
 			})
 
 			err_hand(err, "vai saber")
 		}
+		fmt.Println(time.Since(init))
 
 		fmt.Println("ok!")
 	}
