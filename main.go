@@ -47,8 +47,8 @@ var (
 	nome_input      string
 
 	//uso de banco
-	using_bd_path   string
-	tabela_generica [][]any
+	bd_carregado_path string
+	tabela_carregada  [][][]byte
 
 	//erro
 	error_signal bool = false
@@ -230,19 +230,19 @@ func main() {
 		fmt.Printf("rodando: terminal\n")
 
 		usar_banco("beta")
-		init := time.Now()
 		echo, _ := carregar_tabela("tabela")
-		fmt.Println(time.Since(init))
 		fmt.Println(echo)
 
-		// terminal_request_hand()
+		show_tabela_carregada("tabela")
+
+		//terminal_request_hand()
 
 	case "pop":
 		fmt.Println("popin")
 		fmt.Println(usar_banco("beta"))
 
 		init := time.Now()
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 200; i++ {
 			_, err := inserir_banco("tabela", []string{
 				fmt.Sprintf("pedrinho#%v", i),
 				fmt.Sprintf("%v", i+67),

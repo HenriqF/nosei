@@ -8,7 +8,7 @@ import (
 	"unicode"
 )
 
-func is_nome_valido(nome string) bool {
+func is_nome_tabela_valido(nome string) bool {
 	if len(nome) < 1 {
 		return false
 	}
@@ -17,6 +17,22 @@ func is_nome_valido(nome string) bool {
 		char := nome[i]
 
 		if !unicode.IsLetter(rune(char)) && !unicode.IsDigit(rune(char)) && char != '_' {
+			return false
+		}
+	}
+
+	return true
+}
+
+func is_nome_regra_valido(nome string) bool {
+	if len(nome) < 1 || nome == "index" {
+		return false
+	}
+
+	for i := 0; i < len(nome); i++ {
+		char := nome[i]
+
+		if !unicode.IsLetter(rune(char)) && char != '_' {
 			return false
 		}
 	}
@@ -76,7 +92,7 @@ func get_rule(conteudo string) (rule, error) {
 	}
 
 	descritor := strings.TrimSpace(partes[1])
-	if !is_nome_valido(descritor) {
+	if !is_nome_regra_valido(descritor) {
 		return nova_regra, errors.New("regra com nome de descritor indevido\n")
 	}
 
@@ -94,7 +110,7 @@ func get_tabela_name(line string) (string, error) {
 			return "", errors.New("nome repetido de tabela")
 		}
 
-		if !is_nome_valido(nome) {
+		if !is_nome_tabela_valido(nome) {
 			return "", errors.New("nome de tabela indevido")
 		}
 
