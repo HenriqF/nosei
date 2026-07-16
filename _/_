@@ -52,12 +52,16 @@ numero -> variavel2
 
 datafile_size: 0
 
+
+total: 4
+
  0     4     8     12     17    (+ datafile_size)
 [21   ][12  ][17  ][pedro][6767]
- 4     4     4     5      4
+ 4     4      4     5      4
+              ^
 
 
-
+total_block_size -current -total
 
 
 * pessoas onde (letras = "sigma") and (numero = 20)

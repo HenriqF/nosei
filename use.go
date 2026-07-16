@@ -40,7 +40,7 @@ func usar_banco(qual string) string {
 	return "usando\n"
 }
 
-func process_data_tipo(valor string, tipo regra_tipo) (string, error) {
+func process_data_tipo_store(valor string, tipo regra_tipo) (string, error) {
 	switch tipo {
 	case tipo_texto:
 		return valor, nil
@@ -50,6 +50,19 @@ func process_data_tipo(valor string, tipo regra_tipo) (string, error) {
 			return "", err
 		}
 		return get_numero_bytes(numero), nil
+	default:
+		return "", errors.New("sigma")
+	}
+}
+
+func process_data_tipo_read(valor string, tipo regra_tipo) (string, error) {
+	switch tipo {
+	case tipo_texto:
+		return valor, nil
+	case tipo_numero:
+		numero := strconv.Itoa(get_bytes_numero(valor))
+
+		return numero, nil
 	default:
 		return "", errors.New("sigma")
 	}
@@ -176,7 +189,7 @@ func inserir_banco(nome_tabela string, dados []string) (string, error) {
 	}
 
 	for i := range dados {
-		store, err := process_data_tipo(dados[i], tabelas[tabela_index].rules[i].tipo)
+		store, err := process_data_tipo_store(dados[i], tabelas[tabela_index].rules[i].tipo)
 		if err != nil {
 			return "erro com dados para inserir\n", errors.New("sigma")
 		}
@@ -251,6 +264,48 @@ func get_indexes_from_autoindex(autoindex_path string) ([][]string, error) {
 	return indexes, nil
 }
 
+func read_indexes_from_file(datafile_path string, indexes []string, tabela_index int) error {
+	qtd_regras := len(tabelas[tabela_index].rules)
+
+	cont, err := os.ReadFile(datafile_path)
+	if err != nil {
+		return err
+	}
+
+	block_offset := 0
+	for i := range indexes {
+		pos := get_bytes_numero(indexes[i][int_size:])
+		total_block_size := get_bytes_numerob(cont[pos : pos+int_size])
+
+		bloco := string(cont[pos+int_size : pos+total_block_size])
+		offset := (qtd_regras - 1) * int_size
+
+		block_size_offset := total_block_size + block_offset
+		total_size_read := 0
+
+		block_offset += total_block_size
+
+		fmt.Printf("index [%v]:\n", get_bytes_numero(indexes[i][:int_size]))
+		for j := qtd_regras - 1; j >= 0; j-- {
+			read_from := get_bytes_numero(bloco[offset : offset+int_size])
+			to_read := block_size_offset - read_from - total_size_read
+
+			col_rule := tabelas[tabela_index].rules[j]
+			data, err := process_data_tipo_read(string(cont[read_from:to_read+read_from]), col_rule.tipo)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("%v -> %v\n", col_rule.comando, data)
+
+			total_size_read += to_read
+			offset -= int_size
+		}
+
+	}
+
+	return nil
+}
+
 func carregar_tabela(nome_tabela string) (string, error) {
 	tabela_generica = nil
 
@@ -261,6 +316,12 @@ func carregar_tabela(nome_tabela string) (string, error) {
 
 	tabela_path := filepath.Join(using_bd_path, nome_tabela)
 	autoindex_path := filepath.Join(tabela_path, "autoindex.ns")
+	data_path := filepath.Join(tabela_path, "data")
+
+	tabela_index, err := get_tabela_index(nome_tabela)
+	if err != nil {
+		return "erro", err
+	}
 
 	indexes, err := get_indexes_from_autoindex(autoindex_path)
 	if err != nil {
@@ -268,11 +329,9 @@ func carregar_tabela(nome_tabela string) (string, error) {
 	}
 
 	for i := range indexes {
-		fmt.Printf("Arquivo: [%v] ->\n", i)
+		file_path := filepath.Join(data_path, fmt.Sprintf("data%v.nsd", i))
 
-		for j := range indexes[i] {
-			fmt.Printf("    %v\n", []byte(indexes[i][j]))
-		}
+		read_indexes_from_file(file_path, indexes[i], tabela_index)
 	}
 
 	return "ok\n", nil
