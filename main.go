@@ -260,7 +260,7 @@ func main() {
 		fmt.Println("ok!")
 
 	case "op":
-		_, err := process_operation("(10 - 4) * 3")
+		_, err := process_operation("67 / 2")
 		err_hand(err, "deu merda")
 
 	}
