@@ -1,5 +1,5 @@
 [build]
-    run: go build main.go ruler.go create.go use.go
+    run: go build main.go ruler.go create.go use.go operacoes.go
     end
 
 [clean]
@@ -28,7 +28,7 @@
     //run: start cmd -ArgumentList /k telnet localhost 6767
 
     time_start: leitura
-    run: .\main.exe terminal
+    run: .\main.exe op
     time_end: leitura
 
     silent: 1

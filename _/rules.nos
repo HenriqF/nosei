@@ -1,9 +1,9 @@
 [tabela]
     25 letras -> nome
-    numero -> primeiro
     50 letras -> descricao
+    10 letras -> nota
+    numero -> primeiro
     numero -> segundo
     numero -> terceiro
-    10 letras -> puta
 
 end

@@ -9,7 +9,6 @@ import (
 	"strconv"
 )
 
-const max_data_file_bytes int = 2000
 
 func usar_banco(qual string) string {
 	db_path := filepath.Join(default_db_path, qual)

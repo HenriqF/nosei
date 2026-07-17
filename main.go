@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+const max_data_file_bytes int = 256000
 const default_num_size int = 4
 
 type regra_tipo int
@@ -235,7 +236,7 @@ func main() {
 
 		show_tabela_carregada("tabela")
 
-		//terminal_request_hand()
+		// terminal_request_hand()
 
 	case "pop":
 		fmt.Println("popin")
@@ -245,11 +246,11 @@ func main() {
 		for i := 0; i < 200; i++ {
 			_, err := inserir_banco("tabela", []string{
 				fmt.Sprintf("pedrinho#%v", i),
-				fmt.Sprintf("%v", i+67),
 				fmt.Sprintf("Eu gosto muito de %v", i+3),
+				fmt.Sprintf("A#%v", i),
+				fmt.Sprintf("%v", i+67),
 				fmt.Sprintf("%v", i+69),
 				fmt.Sprintf("%v", i+420),
-				fmt.Sprintf("A#%v", i),
 			})
 
 			err_hand(err, "vai saber")
@@ -257,6 +258,11 @@ func main() {
 		fmt.Println(time.Since(init))
 
 		fmt.Println("ok!")
+
+	case "op":
+		_, err := process_operation("(10 - 4) * 3")
+		err_hand(err, "deu merda")
+
 	}
 
 }

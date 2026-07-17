@@ -64,4 +64,7 @@ total: 4
 total_block_size -current -total
 
 
-* pessoas onde (letras = "sigma") and (numero = 20)
+operacao -> se for verdade, retorna a tabela
+
+
+
