@@ -6,14 +6,14 @@
     run: del main.exe
     end
 
-[pop]
+[op]
     goto: build
 
     silent: 0
     //run: start cmd -ArgumentList /k telnet localhost 6767
 
     time_start: leitura
-    run: .\main.exe pop
+    run: .\main.exe op
     time_end: leitura
 
     silent: 1
@@ -28,7 +28,7 @@
     //run: start cmd -ArgumentList /k telnet localhost 6767
 
     time_start: leitura
-    run: .\main.exe op
+    run: .\main.exe terminal
     time_end: leitura
 
     silent: 1

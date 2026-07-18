@@ -23,8 +23,15 @@ const (
 	rune_default
 )
 
+func bool_to_int(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 func is_rune_operator(r rune) bool {
-	if r == '+' || r == '-' || r == '*' || r == '/' || r == '=' {
+	if r == '+' || r == '-' || r == '*' || r == '/' || r == '=' || r == '>' || r == '<' || r == '!' {
 		return true
 	}
 	return false
@@ -51,6 +58,9 @@ func get_char_tipo(input rune) rune_tipo {
 }
 
 func get_token_precedence(t token) int {
+	if t.valor == "==" || t.valor == ">" || t.valor == "<" || t.valor == ">=" || t.valor == "<=" || t.valor == "!=" {
+		return 0
+	}
 	if t.valor == "+" || t.valor == "-" {
 		return 1
 	}
@@ -89,6 +99,10 @@ func get_tokens(input string) ([]token, error) {
 	}
 
 	for i := range tokens {
+		if tokens[i].tipo == rune_nome {
+			tokens[i].valor_num = -1
+		}
+
 		if tokens[i].tipo == rune_numero {
 			num, err := strconv.Atoi(tokens[i].valor)
 			if err != nil {
@@ -232,6 +246,29 @@ func eval_operation(input []token) (int, error) {
 			stack = append(stack, a/b)
 			continue
 
+		case "==":
+			stack = append(stack, bool_to_int(a == b))
+			continue
+
+		case ">":
+			stack = append(stack, bool_to_int(a > b))
+			continue
+
+		case "<":
+			stack = append(stack, bool_to_int(a < b))
+			continue
+
+		case "<=":
+			stack = append(stack, bool_to_int(a <= b))
+			continue
+
+		case ">=":
+			stack = append(stack, bool_to_int(a >= b))
+			continue
+
+		case "!=":
+			stack = append(stack, bool_to_int(a != b))
+			continue
 		}
 
 	}
@@ -239,23 +276,65 @@ func eval_operation(input []token) (int, error) {
 	return stack[0], nil
 }
 
-func process_operation(input string) (string, error) {
+func prepare_operation(input string) ([]token, error) {
 
 	toks, err := get_tokens(input)
 	if err != nil {
-		return err.Error(), err
+		return nil, err
 	}
 
 	toks_p, err := ordenar_tokens(toks)
 	if err != nil {
-		return err.Error(), err
+		return nil, err
 	}
 
-	res, err := eval_operation(toks_p)
+	// _, err = eval_operation(toks_p)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	return toks_p, nil
+}
+
+func trocar_nome_por_valor(operacao []token, regras []rule, tabela [][]byte) ([]token, error) {
+	for k, t := range operacao {
+		if t.tipo != rune_nome {
+			continue
+		}
+
+		if "index" == t.valor {
+			operacao[k].valor_num = get_bytes_numero(string(tabela[0]))
+			continue
+		}
+
+		for i := range regras {
+			if regras[i].descritor == t.valor {
+				operacao[k].valor_num = get_bytes_numero(string(tabela[i+1]))
+			}
+
+		}
+	}
+
+	return operacao, nil
+}
+
+func processar_tabela_carregada(nome_tabela string, operacao []token) error {
+	tabela_index, err := get_tabela_index(nome_tabela)
 	if err != nil {
-		return err.Error(), err
+		return err
 	}
-	fmt.Println(res)
 
-	return input, nil
+	regras := tabelas[tabela_index].rules
+
+	for _, t := range tabela_carregada {
+		op, err := trocar_nome_por_valor(operacao, regras, t)
+		if err != nil {
+			return err
+		}
+
+		res, err := eval_operation(op)
+		fmt.Printf("index: %v -> %v\n", get_bytes_numero(string(t[0])), res)
+	}
+
+	return nil
 }

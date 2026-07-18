@@ -48,11 +48,9 @@ var (
 	nome_input      string
 
 	//uso de banco
-	bd_carregado_path string
-	tabela_carregada  [][][]byte
-
-	//erro
-	error_signal bool = false
+	bd_carregado_path     string
+	tabela_carregada      [][][]byte
+	nome_tabela_carregada string
 )
 
 // funcs ajuda
@@ -134,7 +132,7 @@ func handle_input(input string) string {
 	if recieving_rules {
 		rule_builder(input)
 
-		if !recieving_rules && !error_signal {
+		if !recieving_rules {
 			echo += finalize_rules()
 		}
 
@@ -143,32 +141,22 @@ func handle_input(input string) string {
 
 	} else if strings.HasPrefix(input, "novo ") && len(input) >= 7 {
 		recieving_rules = true
-		error_signal = false
 		rule_input = ""
 		nome_input = input[5:]
 
 		echo = fmt.Sprintf("Envie regras para [%v]...\n", nome_input)
 	} else if strings.HasPrefix(input, "usar ") && len(input) >= 7 {
-		error_signal = false
 		nome_banco := input[5:]
+		echo, err = usar_banco(nome_banco)
 
-		echo = usar_banco(nome_banco)
 	} else if input == "put" {
-		error_signal = false
-
 		echo, err = inserir_banco("porra", []string{"pedrinho da bahia", "67", "69"})
-		if err != nil {
-			error_signal = true
-		}
+
 	} else if input == "get" {
-		error_signal = false
-
 		echo, err = carregar_tabela("porra")
-		if err != nil {
-			error_signal = true
-		}
-
 	}
+
+	err_hand(err, "handle_input()")
 
 	return echo
 }
@@ -229,6 +217,7 @@ func main() {
 
 	case "terminal":
 		fmt.Printf("rodando: terminal\n")
+		//terminal_request_hand()
 
 		usar_banco("beta")
 		echo, _ := carregar_tabela("tabela")
@@ -236,20 +225,18 @@ func main() {
 
 		show_tabela_carregada("tabela")
 
-		// terminal_request_hand()
-
 	case "pop":
 		fmt.Println("popin")
 		fmt.Println(usar_banco("beta"))
 
 		init := time.Now()
-		for i := 0; i < 200; i++ {
+		for i := 0; i < 5; i++ {
 			_, err := inserir_banco("tabela", []string{
 				fmt.Sprintf("pedrinho#%v", i),
 				fmt.Sprintf("Eu gosto muito de %v", i+3),
 				fmt.Sprintf("A#%v", i),
-				fmt.Sprintf("%v", i+67),
-				fmt.Sprintf("%v", i+69),
+				fmt.Sprintf("%v", i),
+				fmt.Sprintf("%v", i),
 				fmt.Sprintf("%v", i+420),
 			})
 
@@ -260,7 +247,15 @@ func main() {
 		fmt.Println("ok!")
 
 	case "op":
-		_, err := process_operation("67 / 2")
+		usar_banco("beta")
+		_, err := carregar_tabela("tabela")
+		err_hand(err, "deu ruim")
+
+		op, err := prepare_operation("primeiro == segundo")
+		err_hand(err, "deu ruim")
+
+		processar_tabela_carregada("tabela", op)
+
 		err_hand(err, "deu merda")
 
 	}

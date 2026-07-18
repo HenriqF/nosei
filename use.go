@@ -9,33 +9,31 @@ import (
 	"strconv"
 )
 
-
-func usar_banco(qual string) string {
+// carregras as regras do banco e seu caminho
+func usar_banco(qual string) (string, error) {
 	db_path := filepath.Join(default_db_path, qual)
 
 	if !path_exists(db_path, true) {
-		error_signal = true
-		return "banco não existe\n"
+		return "banco não existe\n", errors.New("banco nao existe")
 	}
 
 	bd_carregado_path = db_path
 	rules_path := filepath.Join(bd_carregado_path, "regras.ns")
 
 	if !path_exists(rules_path, false) {
-		error_signal = true
-		return "banco sem regras?\n"
+		return "banco sem regras?\n", errors.New("banco sem regras")
 	}
 
 	regras, err := os.ReadFile(rules_path)
 	err_hand(err, "abrir regras usar banco")
 
-	parse_rules(string(regras))
-	if error_signal {
-		return "regras malformadas\n"
+	_, err = parse_rules(string(regras))
+	if err != nil {
+		return "regras malformadas\n", errors.New("regra malformada")
 	}
 	//show_tabelas()
 
-	return "usando\n"
+	return "usando\n", nil
 }
 
 func process_data_tipo_store(valor string, regra rule) (string, error) {
@@ -359,6 +357,7 @@ func show_tabela_carregada(nome_tabela string) {
 
 func carregar_tabela(nome_tabela string) (string, error) {
 	tabela_carregada = nil
+	nome_tabela_carregada = ""
 
 	tabela_path := filepath.Join(bd_carregado_path, nome_tabela)
 	autoindex_path := filepath.Join(tabela_path, "autoindex.ns")
@@ -385,5 +384,6 @@ func carregar_tabela(nome_tabela string) (string, error) {
 		tabela_carregada = append(tabela_carregada, res...)
 	}
 
-	return "ok\n", nil
+	nome_tabela_carregada = nome_tabela
+	return "tabela carregada\n", nil
 }
