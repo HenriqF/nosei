@@ -1,0 +1,15 @@
+[build]
+    run: go build .
+    end
+
+[cleanup]
+    run: del nosei.exe
+    end
+
+[main]
+    goto: build
+
+    run: .\nosei terminal
+
+    goto: cleanup
+    end
