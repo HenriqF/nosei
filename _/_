@@ -67,4 +67,23 @@ total_block_size -current -total
 operacao -> se for verdade, retorna a tabela
 
 
+PARA FAZER:
 
+
+usar_banco("banco")
+carregar_tabela("tabela")
+show_tabela_carregada("tabela")
+        show_indexes_tabela_carregada("tabela", indexes)
+
+inserir_banco("tabela", []string{
+    fmt.Sprintf("pedrinho#%v", i),
+    fmt.Sprintf("Eu gosto muito de %v", i+3),
+    fmt.Sprintf("A#%v", i),
+    fmt.Sprintf("%v", i),
+    fmt.Sprintf("%v", i),
+    fmt.Sprintf("%v", i+420),
+})
+
+
+op = preparar_operacao("nome == descricao")
+processar_tabela_carregada("tabela", op)

@@ -14,14 +14,14 @@ func usar_banco(qual string) (string, error) {
 	db_path := filepath.Join(default_db_path, qual)
 
 	if !path_exists(db_path, true) {
-		return "banco não existe\n", errors.New("banco nao existe")
+		return "", errors.New("banco não existe\n")
 	}
 
 	bd_carregado_path = db_path
 	rules_path := filepath.Join(bd_carregado_path, "regras.ns")
 
 	if !path_exists(rules_path, false) {
-		return "banco sem regras?\n", errors.New("banco sem regras")
+		return "", errors.New("banco sem regras?\n")
 	}
 
 	regras, err := os.ReadFile(rules_path)
@@ -29,7 +29,7 @@ func usar_banco(qual string) (string, error) {
 
 	_, err = parse_rules(string(regras))
 	if err != nil {
-		return "regras malformadas\n", errors.New("regra malformada")
+		return "", errors.New("regras malformadas\n")
 	}
 	//show_tabelas()
 
@@ -188,7 +188,7 @@ func get_tabela_index(nome string) (int, error) {
 func inserir_banco(nome_tabela string, dados []string) (string, error) {
 	tabela_index, err := get_tabela_index(nome_tabela)
 	if err != nil {
-		return "tabela nao existe\n", err
+		return "", err
 	}
 
 	tabela_path := filepath.Join(bd_carregado_path, nome_tabela)
@@ -196,18 +196,19 @@ func inserir_banco(nome_tabela string, dados []string) (string, error) {
 
 	datafile_path, datafile_length, datafile_index, err := prepare_data_files(tabela_path)
 	if err != nil {
-		return "erro com datafile\n", err
+		return "", err
 	}
 
 	qtd_rules := len(tabelas[tabela_index].rules)
 	if len(dados) != qtd_rules {
-		return "tamanho de dados nao condiz com tabelas\n", errors.New("erro tamanho")
+		return "", errors.New("tamanho de dados nao condiz com tabelas\n")
 	}
 
 	for i := range dados {
 		store, err := process_data_tipo_store(dados[i], tabelas[tabela_index].rules[i])
 		if err != nil {
-			return "erro com dados para inserir\n", errors.New("sigma")
+			//return "", err
+			return "", errors.New("erro com dados para inserir\n")
 		}
 		dados[i] = store
 	}
@@ -234,12 +235,12 @@ func inserir_banco(nome_tabela string, dados []string) (string, error) {
 
 	file, err := os.OpenFile(datafile_path, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		return "erro abrindo datafile\n", err
+		return "", errors.New("erro abrindo datafile\n")
 	}
 	defer file.Close()
 
 	if _, err := file.WriteString(bloco_data); err != nil {
-		return "erro escrevendo em datafile\n", err
+		return "", errors.New("erro escrevendo em datafile\n")
 	}
 
 	resp, err := update_autoindex(autoindex_path, datafile_index, datafile_length)
@@ -355,7 +356,20 @@ func show_tabela_carregada(nome_tabela string) {
 	}
 }
 
+func get_tabela_rules(nome_tabela string) ([]rule, error) {
+	tabela_index, err := get_tabela_index(nome_tabela)
+	if err != nil {
+		return nil, err
+	}
+
+	return tabelas[tabela_index].rules, err
+}
+
 func carregar_tabela(nome_tabela string) (string, error) {
+	if nome_tabela_carregada == nome_tabela {
+		return "tabela já está carregada\n", nil
+	}
+
 	tabela_carregada = nil
 	nome_tabela_carregada = ""
 

@@ -129,39 +129,46 @@ func handle_input(input string) string {
 	var echo string
 	var err error
 
-	if recieving_rules {
-		rule_builder(input)
+	separado := strings.Split(input, " ")
 
-		if !recieving_rules {
-			echo += finalize_rules()
+	if len(separado) == 1 {
+		if input == "PAROU" {
+			log.Fatalf("PAROU\n")
 		}
-
-	} else if input == "PAROU" {
-		log.Fatalf("PAROU\n")
-
-	} else if strings.HasPrefix(input, "novo ") && len(input) >= 7 {
-		recieving_rules = true
-		rule_input = ""
-		nome_input = input[5:]
-
-		echo = fmt.Sprintf("Envie regras para [%v]...\n", nome_input)
-	} else if strings.HasPrefix(input, "usar ") && len(input) >= 7 {
-		nome_banco := input[5:]
-		echo, err = usar_banco(nome_banco)
-
-	} else if input == "put" {
-		echo, err = inserir_banco("porra", []string{"pedrinho da bahia", "67", "69"})
-
-	} else if input == "get" {
-		echo, err = carregar_tabela("porra")
 	}
 
-	err_hand(err, "handle_input()")
+	switch separado[0] {
+	case "usar":
+		nome_banco := separado[1]
+		echo, err = usar_banco(nome_banco)
+		if err != nil {
+			return err.Error()
+		}
+		return echo
 
-	return echo
+	case "novo":
+		recieving_rules = true
+		rule_input = ""
+
+		nome_input = separado[1]
+		echo = fmt.Sprintf("Envie regras para [%v]...\n", nome_input)
+
+		return echo
+
+	case "put":
+		echo, err := input_inserir_banco(separado)
+		if err != nil {
+			return err.Error()
+		}
+		return echo
+
+	}
+
+	return ""
 }
 
-func request_hand(c net.Conn) {
+// conversariada
+func web_request_hand(c net.Conn) {
 	defer c.Close()
 	reader := bufio.NewReader(c)
 
@@ -175,7 +182,9 @@ func request_hand(c net.Conn) {
 		answer := handle_input(clean)
 
 		_, err = c.Write([]byte(answer))
-		err_hand(err, "echo")
+		if err != nil {
+			return
+		}
 	}
 
 }
@@ -191,8 +200,12 @@ func terminal_request_hand() {
 		fmt.Printf("%v", answer)
 	}
 
-	err_hand(scanner.Err(), "scanner temrinal")
+	if scanner.Err() != nil {
+		return
+	}
 }
+
+//----------
 
 func main() {
 	mode := "web"
@@ -212,12 +225,14 @@ func main() {
 		for {
 			c, err := listener.Accept()
 			err_hand(err, "accept")
-			request_hand(c)
+			web_request_hand(c)
 		}
+
+	case "usar":
+		terminal_request_hand()
 
 	case "terminal":
 		fmt.Printf("rodando: terminal\n")
-		//terminal_request_hand()
 
 		usar_banco("beta")
 		echo, _ := carregar_tabela("tabela")
@@ -251,10 +266,10 @@ func main() {
 		_, err := carregar_tabela("tabela")
 		err_hand(err, "deu ruim")
 
-		op, err := prepare_operation("primeiro == segundo")
+		op, err := preparar_operacao("nome == descricao")
 		err_hand(err, "deu ruim")
 
-		processar_tabela_carregada("tabela", op)
+		err = processar_tabela_carregada("tabela", op)
 
 		err_hand(err, "deu merda")
 

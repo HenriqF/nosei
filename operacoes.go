@@ -30,11 +30,11 @@ func bool_to_int(b bool) int {
 	return 0
 }
 
-func is_rune_operator(r rune) bool {
-	if r == '+' || r == '-' || r == '*' || r == '/' || r == '=' || r == '>' || r == '<' || r == '!' {
-		return true
+func int_to_bool(i int) bool {
+	if i == 0 {
+		return false
 	}
-	return false
+	return true
 }
 
 func get_char_tipo(input rune) rune_tipo {
@@ -57,7 +57,26 @@ func get_char_tipo(input rune) rune_tipo {
 	return rune_default
 }
 
+func is_rune_operator(r rune) bool {
+	if r == '+' || r == '-' || r == '*' || r == '/' {
+		return true
+	}
+	if r == '=' || r == '>' || r == '<' || r == '!' {
+		return true
+	}
+	if r == '|' || r == '&' || r == '!' {
+		return true
+	}
+	return false
+}
+
 func get_token_precedence(t token) int {
+	if t.valor == "||" {
+		return -2
+	}
+	if t.valor == "&&" {
+		return -1
+	}
 	if t.valor == "==" || t.valor == ">" || t.valor == "<" || t.valor == ">=" || t.valor == "<=" || t.valor == "!=" {
 		return 0
 	}
@@ -200,7 +219,7 @@ func ordenar_tokens(input []token) ([]token, error) {
 	return final, nil
 }
 
-func eval_operation(input []token) (int, error) {
+func eval_operacao(input []token) (int, error) {
 	var stack []int
 
 	for _, d := range input {
@@ -219,6 +238,10 @@ func eval_operation(input []token) (int, error) {
 		switch d.valor {
 		case "u-":
 			stack = append(stack, b*-1)
+			continue
+
+		case "!":
+			stack = append(stack, bool_to_int(!int_to_bool(b)))
 			continue
 		}
 
@@ -269,6 +292,17 @@ func eval_operation(input []token) (int, error) {
 		case "!=":
 			stack = append(stack, bool_to_int(a != b))
 			continue
+
+		case "&&":
+			stack = append(stack, bool_to_int(int_to_bool(a) && int_to_bool(b)))
+			continue
+
+		case "||":
+			stack = append(stack, bool_to_int(int_to_bool(a) || int_to_bool(b)))
+			continue
+
+		default:
+			return 0, errors.New("operador inexistente")
 		}
 
 	}
@@ -276,7 +310,10 @@ func eval_operation(input []token) (int, error) {
 	return stack[0], nil
 }
 
-func prepare_operation(input string) ([]token, error) {
+func preparar_operacao(input string) ([]token, error) {
+	if input == "" {
+		return nil, errors.New("operacao vazia")
+	}
 
 	toks, err := get_tokens(input)
 	if err != nil {
@@ -288,7 +325,7 @@ func prepare_operation(input string) ([]token, error) {
 		return nil, err
 	}
 
-	// _, err = eval_operation(toks_p)
+	// _, err = eval_operacao(toks_p)
 	// if err != nil {
 	// 	return nil, err
 	// }
@@ -310,15 +347,22 @@ func trocar_nome_por_valor(operacao []token, regras []rule, tabela [][]byte) ([]
 		for i := range regras {
 			if regras[i].descritor == t.valor {
 				operacao[k].valor_num = get_bytes_numero(string(tabela[i+1]))
+				break
 			}
-
 		}
+
+		if operacao[k].valor_num == -1 {
+			return nil, errors.New("nome de regra inexistente na tabela")
+		}
+
 	}
 
 	return operacao, nil
 }
 
 func processar_tabela_carregada(nome_tabela string, operacao []token) error {
+	//operacoes com string
+
 	tabela_index, err := get_tabela_index(nome_tabela)
 	if err != nil {
 		return err
@@ -328,12 +372,19 @@ func processar_tabela_carregada(nome_tabela string, operacao []token) error {
 
 	for _, t := range tabela_carregada {
 		op, err := trocar_nome_por_valor(operacao, regras, t)
+
+		fmt.Println(op)
 		if err != nil {
 			return err
 		}
 
-		res, err := eval_operation(op)
-		fmt.Printf("index: %v -> %v\n", get_bytes_numero(string(t[0])), res)
+		res, err := eval_operacao(op)
+		if err != nil {
+			return err
+		}
+		if res != 0 {
+			fmt.Printf("index: %v\n", get_bytes_numero(string(t[0])))
+		}
 	}
 
 	return nil
