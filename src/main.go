@@ -22,6 +22,7 @@ func main() {
 		ponte.Web_request_hand("6767")
 
 	case "terminal":
+		data.Usar_banco("beta")
 		ponte.Terminal_request_hand()
 
 	case "testeshow":
@@ -34,8 +35,8 @@ func main() {
 		data.Usar_banco("beta")
 
 		init := time.Now()
-		for i := 0; i < 5; i++ {
-			_, err := data.Inserir_banco("tabela", []string{
+		for i := 0; i < 2000; i++ {
+			_, err := data.Nova_entrada("tabela", []string{
 				fmt.Sprintf("pedrinho#%v", i),
 				fmt.Sprintf("Eu gosto muito de %v", i+3),
 				fmt.Sprintf("A#%v", i),

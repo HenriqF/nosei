@@ -41,7 +41,7 @@ func handle_input(input string) string {
 		return echo
 
 	case "put":
-		echo, err := Input_inserir_banco(separado)
+		echo, err := Input_nova_entrada(separado)
 		if err != nil {
 			return err.Error()
 		}
@@ -54,11 +54,16 @@ func handle_input(input string) string {
 		}
 		return echo
 
+	case "update":
+		echo, err := Input_update_entrada(separado)
+		if err != nil {
+			return err.Error()
+		}
+		return echo
+
 	case "del":
 		return "nao implementado"
 
-	case "update":
-		return "nao implementado"
 	}
 
 	return ""

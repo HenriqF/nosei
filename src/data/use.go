@@ -72,14 +72,29 @@ func process_data_tipo_read(valor string, tipo shared.Regra_tipo) (string, error
 	}
 }
 
-func update_file_index_header(file_path string, new_header string) error {
+func append_to_file(file_path string, content string) error {
+	f, err := os.OpenFile(file_path, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.Write([]byte(content))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func overwrite_file_from_pos(file_path string, content string, pos int) error {
 	f, err := os.OpenFile(file_path, os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	_, err = f.WriteAt([]byte(new_header), 0)
+	_, err = f.WriteAt([]byte(content), int64(pos))
 	if err != nil {
 		return err
 	}
@@ -101,7 +116,7 @@ func prepare_data_files(tabela_path string) (string, int, int, error) {
 
 	data_index := shared.Get_bytes_numero(string(content))
 
-	datafile_path := filepath.Join(tabela_path, "data", fmt.Sprintf("data%v.nsd", strconv.Itoa(data_index)))
+	datafile_path := filepath.Join(tabela_path, "data", fmt.Sprintf("data%v.nsd", data_index))
 	fileinfo, err := os.Stat(datafile_path)
 	if err != nil {
 		return "", 0, 0, err
@@ -114,30 +129,15 @@ func prepare_data_files(tabela_path string) (string, int, int, error) {
 	}
 
 	data_index++
-	datafile_path = filepath.Join(tabela_path, "data", fmt.Sprintf("data%v.nsd", strconv.Itoa(data_index)))
+	datafile_path = filepath.Join(tabela_path, "data", fmt.Sprintf("data%v.nsd", data_index))
 
 	create_file(datafile_path, "")
-	err = update_file_index_header(dataindex_path, shared.Get_numero_bytes(data_index))
+	err = overwrite_file_from_pos(dataindex_path, shared.Get_numero_bytes(data_index), 0)
 	if err != nil {
 		return "", 0, 0, err
 	}
 
 	return datafile_path, 0, data_index, nil
-}
-
-func append_to_file(file_path string, content string) error {
-	f, err := os.OpenFile(file_path, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = f.Write([]byte(content))
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // atualizar autoindex
@@ -159,7 +159,7 @@ func update_autoindex(auto_index_path string, datafile_index int, block_pos int)
 	index_atual := shared.Get_bytes_numero(string(bytes_index_atual))
 
 	new_header := shared.Get_numero_bytes(index_atual + 1)
-	err = update_file_index_header(auto_index_path, new_header)
+	err = overwrite_file_from_pos(auto_index_path, new_header, 0)
 	if err != nil {
 		return "", err
 	}
@@ -173,6 +173,7 @@ func update_autoindex(auto_index_path string, datafile_index int, block_pos int)
 	return "ok\n", nil
 }
 
+// retorna o index da tabela "nome" dentro de shared.Tabelas, se existir
 func Get_tabela_index(nome string) (int, error) {
 	var tabela_index int = -1
 	for i := 1; i < len(shared.Tabelas); i++ {
@@ -182,13 +183,52 @@ func Get_tabela_index(nome string) (int, error) {
 		}
 	}
 	if tabela_index == -1 {
-		return tabela_index, errors.New("tabela nao existe")
+		return tabela_index, errors.New("tabela nao existe\n")
 	}
 
 	return tabela_index, nil
 }
 
-func Inserir_banco(nome_tabela string, dados []string) (string, error) {
+func preparar_bloco_entrada(tabela_index int, dados []string, file_pos int) (string, error) {
+	qtd_rules := len(shared.Tabelas[tabela_index].Rules)
+	if len(dados) != qtd_rules {
+		return "", errors.New("tamanho de dados nao condiz com shared.Tabelas\n")
+	}
+
+	for i := range dados {
+		store, err := process_data_tipo_store(dados[i], shared.Tabelas[tabela_index].Rules[i])
+		if err != nil {
+			return "", err
+		}
+		dados[i] = store
+	}
+
+	var bloco_data string
+	var bloco_headers string
+	var bloco_content string
+
+	tamanho_total := shared.Default_num_size + shared.Default_num_size*qtd_rules
+	var cur_offset = tamanho_total + file_pos
+
+	for i := range dados {
+		tamanho_total += len(dados[i])
+
+		if i > 0 {
+			bloco_headers += shared.Get_numero_bytes(cur_offset)
+			cur_offset += len(dados[i-1])
+		}
+
+		bloco_content += dados[i]
+	}
+
+	bloco_headers += shared.Get_numero_bytes(cur_offset)
+	bloco_data = shared.Get_numero_bytes(tamanho_total) + bloco_headers + bloco_content
+
+	return bloco_data, nil
+}
+
+// tenta inserir dentro de nome_tabela os dados de uma nova entrada
+func Nova_entrada(nome_tabela string, dados []string) (string, error) {
 	tabela_index, err := Get_tabela_index(nome_tabela)
 	if err != nil {
 		return "", err
@@ -202,39 +242,7 @@ func Inserir_banco(nome_tabela string, dados []string) (string, error) {
 		return "", err
 	}
 
-	qtd_rules := len(shared.Tabelas[tabela_index].Rules)
-	if len(dados) != qtd_rules {
-		return "", errors.New("tamanho de dados nao condiz com shared.Tabelas\n")
-	}
-
-	for i := range dados {
-		store, err := process_data_tipo_store(dados[i], shared.Tabelas[tabela_index].Rules[i])
-		if err != nil {
-			//return "", err
-			return "", errors.New("erro com dados para inserir\n")
-		}
-		dados[i] = store
-	}
-
-	var bloco_data string
-	var bloco_headers string
-	var bloco_content string
-
-	tamanho_total := shared.Default_num_size + shared.Default_num_size*qtd_rules
-	var cur_offset = tamanho_total + datafile_length
-
-	for i := range dados {
-		tamanho_total += len(dados[i])
-
-		if i > 0 {
-			bloco_headers += shared.Get_numero_bytes(cur_offset)
-			cur_offset += len(dados[i-1])
-		}
-
-		bloco_content += dados[i]
-	}
-	bloco_headers += shared.Get_numero_bytes(cur_offset)
-	bloco_data = shared.Get_numero_bytes(tamanho_total) + bloco_headers + bloco_content
+	bloco_data, err := preparar_bloco_entrada(tabela_index, dados, datafile_length)
 
 	file, err := os.OpenFile(datafile_path, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -284,7 +292,8 @@ func get_indexes_from_autoindex(autoindex_path string) ([][]string, error) {
 	return indexes, nil
 }
 
-func get_indexes_from_file(datafile_path string, indexes []string, tabela_index int) ([][][]byte, error) {
+// procura por todos "indexes" dentro de datafile_path e retorna as informacoes em [][][]byte (lista de tabelas -> tabela -> regra)
+func get_entradas_from_datafile(datafile_path string, indexes []string, tabela_index int) ([][][]byte, error) {
 	qtd_regras := len(shared.Tabelas[tabela_index].Rules)
 
 	cont, err := os.ReadFile(datafile_path)
@@ -352,13 +361,13 @@ func Show_tabela_carregada(nome_tabela string) {
 
 				fmt.Printf("%v -> %v\n", regras[j-1].Descritor, processado)
 			} else {
-				fmt.Printf("index -> %v\n", shared.Get_bytes_numero(string(d)))
+				fmt.Printf("\nindex -> %v\n", shared.Get_bytes_numero(string(d)))
 			}
 		}
-		fmt.Println()
 	}
 }
 
+// mostra o conteudo dentro de shared.Tabela_carregada com as regras de nome_tabela onde index está dentro de index_s
 func Show_tabela_carregada_indexes(nome_tabela string, index_s map[int]bool) {
 	tabela_index, err := Get_tabela_index(nome_tabela)
 	if err != nil {
@@ -390,7 +399,6 @@ func Get_tabela_rules(nome_tabela string) ([]shared.Rule, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return shared.Tabelas[tabela_index].Rules, err
 }
 
@@ -421,7 +429,7 @@ func Carregar_tabela(nome_tabela string) (string, error) {
 	for i := range indexes {
 		file_path := filepath.Join(data_path, fmt.Sprintf("data%v.nsd", i))
 
-		res, err := get_indexes_from_file(file_path, indexes[i], tabela_index)
+		res, err := get_entradas_from_datafile(file_path, indexes[i], tabela_index)
 		if err != nil {
 			return err.Error(), err
 		}
@@ -431,4 +439,55 @@ func Carregar_tabela(nome_tabela string) (string, error) {
 
 	shared.Nome_tabela_carregada = nome_tabela
 	return "tabela carregada\n", nil
+}
+
+// atualiza na tabela a informacao da entrada[index] para dados
+func Update_entrada(nome_tabela string, index int, dados []string) (string, error) {
+	_, err := Get_tabela_index(nome_tabela)
+	tabela_index, err := Get_tabela_index(nome_tabela)
+	if err != nil {
+		return "", err
+	}
+
+	tabela_path := filepath.Join(shared.Bd_carregado_path, nome_tabela)
+	autoindex_path := filepath.Join(tabela_path, "autoindex.ns")
+
+	indexes, err := get_indexes_from_autoindex(autoindex_path)
+	if err != nil {
+		return "", err
+	}
+
+	var file_entrada int = -1
+	var pos_entrada int = -1
+Continuar:
+	for d := range indexes {
+		for _, i := range indexes[d] {
+			idx, pos := shared.Get_bytes_numero(string(i[:4])), shared.Get_bytes_numero(string(i[4:]))
+
+			if idx == index {
+				pos_entrada = pos
+				file_entrada = d
+				break Continuar
+			}
+
+		}
+	}
+
+	if pos_entrada == -1 || file_entrada == -1 {
+		return "", errors.New("index nao existe dentro da tabela.\n")
+	}
+
+	datafile_path := filepath.Join(tabela_path, "data", fmt.Sprintf("data%v.nsd", file_entrada))
+
+	bloco, err := preparar_bloco_entrada(tabela_index, dados, pos_entrada)
+	if err != nil {
+		return "", err
+	}
+
+	err = overwrite_file_from_pos(datafile_path, bloco, pos_entrada)
+	if err != nil {
+		return "", err
+	}
+
+	return "atualizado\n", nil
 }
