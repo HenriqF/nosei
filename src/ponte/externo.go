@@ -24,17 +24,16 @@ func handle_input(input string) string {
 	}
 
 	switch separado[0] {
-
-	case "usar":
-		nome_banco := separado[1]
-		echo, err = data.Usar_banco(nome_banco)
+	case "novo":
+		echo, err := Input_novo_banco(separado)
 		if err != nil {
 			return err.Error()
 		}
 		return echo
 
-	case "novo":
-		echo, err := Input_novo_banco(separado)
+	case "usar":
+		nome_banco := separado[1]
+		echo, err = data.Usar_banco(nome_banco)
 		if err != nil {
 			return err.Error()
 		}
@@ -67,7 +66,6 @@ func handle_input(input string) string {
 			return err.Error()
 		}
 		return echo
-
 	}
 
 	return ""

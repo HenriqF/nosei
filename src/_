@@ -9,17 +9,14 @@ vazioindex:
 
 
 
-
-
-pegar de autoindex
-colocar em vazioindex
-mudar arquivo de autoindex para 0
-
-
-
-
 [tabela]
     20 letras -> dados
     numero -> primeiro
 
 5b746162656c615d0a202020203230206c6574726173202d3e206461646f730a202020206e756d65726f202d3e207072696d6569726f0a
+
+[tabela]
+    4096 letras -> dados
+    numero -> primeiro
+
+5b746162656c615d0a2020202034303936206c6574726173202d3e206461646f730a202020206e756d65726f202d3e207072696d6569726f
