@@ -6,6 +6,12 @@
     run: del nosei.exe
     end
 
+[pop]
+    goto: build
+    run: .\nosei testepopular
+    goto: cleanup
+    end
+
 [main]
     goto: build
 

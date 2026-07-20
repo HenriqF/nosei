@@ -62,7 +62,11 @@ func handle_input(input string) string {
 		return echo
 
 	case "del":
-		return "nao implementado"
+		echo, err := Input_deletar_entrada(separado)
+		if err != nil {
+			return err.Error()
+		}
+		return echo
 
 	}
 

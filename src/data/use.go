@@ -243,6 +243,9 @@ func Nova_entrada(nome_tabela string, dados []string) (string, error) {
 	}
 
 	bloco_data, err := preparar_bloco_entrada(tabela_index, dados, datafile_length)
+	if err != nil {
+		return "", err
+	}
 
 	file, err := os.OpenFile(datafile_path, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -263,7 +266,7 @@ func Nova_entrada(nome_tabela string, dados []string) (string, error) {
 }
 
 // return:
-// indexes, [[indexes arq.0] [indexes arq.1]...]
+// indexes, [[], [indexes data1], [indexes data2...]
 func get_indexes_from_autoindex(autoindex_path string) ([][]string, error) {
 	content, err := os.ReadFile(autoindex_path)
 	if err != nil {
@@ -272,13 +275,16 @@ func get_indexes_from_autoindex(autoindex_path string) ([][]string, error) {
 
 	headers := shared.Split_fixed(string(content[shared.Default_num_size:]), shared.Default_num_size*3)
 	if headers == nil {
-		return nil, errors.New("tabela vazia")
+		return nil, errors.New("tabela vazia\n")
 	}
 
 	var indexes [][]string
 
 	for i := range headers {
 		current_file := shared.Get_bytes_numero(headers[i][:shared.Default_num_size])
+		if current_file == 0 {
+			continue
+		}
 
 		for k := len(indexes) - 1; k < current_file; k++ {
 			var novo []string
@@ -290,6 +296,32 @@ func get_indexes_from_autoindex(autoindex_path string) ([][]string, error) {
 	}
 
 	return indexes, nil
+}
+
+// return:
+// posicao do bloco que contem os metadados da entrada index dentro do arquivo autoindex
+// o bloco em si
+func find_entrada_em_autoindex(autoindex_path string, index int) (int, string, error) {
+	content, err := os.ReadFile(autoindex_path)
+	if err != nil {
+		return -1, "", err
+	}
+
+	if len(content)-shared.Default_num_size <= 0 {
+		return -1, "", errors.New("tabela vazia\n")
+	}
+	header_size := shared.Default_num_size * 3
+
+	for i := shared.Default_num_size; i < len(content); i += (header_size) {
+		header := string(content[i : i+header_size])
+		res := shared.Split_fixed(header, shared.Default_num_size)
+		if shared.Get_bytes_numero(res[1]) == index {
+			return i, header, nil
+		}
+
+	}
+
+	return -1, "", errors.New("index nao existe\n")
 }
 
 // procura por todos "indexes" dentro de datafile_path e retorna as informacoes em [][][]byte (lista de tabelas -> tabela -> regra)
@@ -405,9 +437,9 @@ func Get_tabela_rules(nome_tabela string) ([]shared.Rule, error) {
 // coloca os dados da tabela nome_tabela em
 // (shared.Nome_tabela_carregada, shared.Tabela_carregada) para uso posterior
 func Carregar_tabela(nome_tabela string) (string, error) {
-	if shared.Nome_tabela_carregada == nome_tabela {
-		return "tabela já está carregada\n", nil
-	}
+	// if shared.Nome_tabela_carregada == nome_tabela {
+	// 	return "tabela já está carregada\n", nil
+	// }
 
 	shared.Tabela_carregada = nil
 	shared.Nome_tabela_carregada = ""
@@ -427,6 +459,10 @@ func Carregar_tabela(nome_tabela string) (string, error) {
 	}
 
 	for i := range indexes {
+		if i == 0 {
+			continue
+		}
+
 		file_path := filepath.Join(data_path, fmt.Sprintf("data%v.nsd", i))
 
 		res, err := get_entradas_from_datafile(file_path, indexes[i], tabela_index)
@@ -441,9 +477,8 @@ func Carregar_tabela(nome_tabela string) (string, error) {
 	return "tabela carregada\n", nil
 }
 
-// atualiza na tabela a informacao da entrada[index] para dados
+// atualiza na tabela a informacao da entrada index para dados
 func Update_entrada(nome_tabela string, index int, dados []string) (string, error) {
-	_, err := Get_tabela_index(nome_tabela)
 	tabela_index, err := Get_tabela_index(nome_tabela)
 	if err != nil {
 		return "", err
@@ -459,7 +494,8 @@ func Update_entrada(nome_tabela string, index int, dados []string) (string, erro
 
 	var file_entrada int = -1
 	var pos_entrada int = -1
-Continuar:
+
+	brk := false
 	for d := range indexes {
 		for _, i := range indexes[d] {
 			idx, pos := shared.Get_bytes_numero(string(i[:4])), shared.Get_bytes_numero(string(i[4:]))
@@ -467,9 +503,14 @@ Continuar:
 			if idx == index {
 				pos_entrada = pos
 				file_entrada = d
-				break Continuar
+				brk = true
+				break
 			}
 
+		}
+
+		if brk {
+			break
 		}
 	}
 
@@ -490,4 +531,36 @@ Continuar:
 	}
 
 	return "atualizado\n", nil
+}
+
+// deleta a entrada index de nome_tabela, atualiza seus metadados de arquivo no autoindex e cria um ponteiro do espaco vazio de autoindex em vazioindex
+func Deletar_entrada(nome_tabela string, index int) (string, error) {
+	_, err := Get_tabela_index(nome_tabela)
+	if err != nil {
+		return "", err
+	}
+
+	tabela_path := filepath.Join(shared.Bd_carregado_path, nome_tabela)
+	autoindex_path := filepath.Join(tabela_path, "autoindex.ns")
+	vazioindex_path := filepath.Join(tabela_path, "vazioindex.ns")
+
+	pos, bloco, err := find_entrada_em_autoindex(autoindex_path, index)
+	if err != nil {
+		return "", err
+	}
+
+	err = append_to_file(vazioindex_path, shared.Get_numero_bytes(pos))
+	if err != nil {
+		return "", err
+	}
+
+	//merdas quando append vazioindex ok e overwrite falha em seguida, nunca aconteceu
+	novo_bloco := shared.Get_numero_bytes(0) + bloco[shared.Default_num_size:]
+
+	err = overwrite_file_from_pos(autoindex_path, novo_bloco, pos)
+	if err != nil {
+		return "", err
+	}
+
+	return "deletado\n", nil
 }

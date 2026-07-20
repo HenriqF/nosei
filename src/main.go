@@ -35,14 +35,10 @@ func main() {
 		data.Usar_banco("beta")
 
 		init := time.Now()
-		for i := 0; i < 2000; i++ {
+		for i := 0; i < 30; i++ {
 			_, err := data.Nova_entrada("tabela", []string{
-				fmt.Sprintf("pedrinho#%v", i),
-				fmt.Sprintf("Eu gosto muito de %v", i+3),
-				fmt.Sprintf("A#%v", i),
+				fmt.Sprintf("nome#%v", i),
 				fmt.Sprintf("%v", i),
-				fmt.Sprintf("%v", i),
-				fmt.Sprintf("%v", i+420),
 			})
 
 			shared.Err_hand(err, "vai saber")

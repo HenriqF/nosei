@@ -130,7 +130,7 @@ func Input_ver_tabela(args []string) (string, error) {
 
 	if len(args) != 2 {
 		data.Show_tabela_carregada(args[0])
-		return fmt.Sprintf("mostrando (%v)\n", dt), nil
+		return fmt.Sprintf("mostrando (busca: %v)\n", dt), nil
 	}
 
 	expressao, err := hex.DecodeString(args[1])
@@ -153,5 +153,27 @@ func Input_ver_tabela(args []string) (string, error) {
 
 	data.Show_tabela_carregada_indexes(args[0], res)
 
-	return fmt.Sprintf("mostrando (%v)\n", dt), nil
+	return fmt.Sprintf("mostrando (busca: %v)\n", dt), nil
+}
+
+// args: del nome_tabela index?
+func Input_deletar_entrada(args []string) (string, error) {
+	args = args[1:]
+	if len(args) < 2 {
+		return "", errors.New("É necessário um nome de tabela e index\n")
+	}
+
+	numero, err := strconv.Atoi(args[1])
+	if err != nil {
+		return "", errors.New("Numero de index malformado\n")
+	}
+
+	t := time.Now()
+	echo, err := data.Deletar_entrada(args[0], numero)
+	d := time.Since(t)
+	if err != nil {
+		return "", err
+	}
+
+	return echo + fmt.Sprintf("%v\n", d), nil
 }

@@ -7,6 +7,8 @@ import (
 )
 
 const Max_data_file_bytes int = 256000
+// const Max_data_file_bytes int = 1000
+
 const Default_num_size int = 4
 
 type Regra_tipo int
@@ -69,16 +71,19 @@ func Get_numero_bytes(numero int) string {
 }
 
 func Get_bytes_numero(str string) int {
-
 	n := binary.BigEndian.Uint32([]byte(str))
 
-	return int(n)
+	m := int32(n)
+
+	return int(m)
 }
 
 func Get_bytes_numerob(bytes []byte) int {
 	n := binary.BigEndian.Uint32(bytes)
 
-	return int(n)
+	m := int32(n)
+
+	return int(m)
 }
 
 func Err_hand(err error, msg string) {

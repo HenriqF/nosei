@@ -70,11 +70,11 @@ func Create_db() (string, error) {
 		index_path := filepath.Join(tabela_path, "autoindex.ns")
 		free_path := filepath.Join(tabela_path, "vazioindex.ns")
 		data_index_path := filepath.Join(tabela_path, "dataindex.ns")
-		data_zero_path := filepath.Join(data_path, "data0.nsd")
+		data_zero_path := filepath.Join(data_path, "data1.nsd")
 
 		create_file(index_path, shared.Get_numero_bytes(0))
 		create_file(free_path, "")
-		create_file(data_index_path, shared.Get_numero_bytes(0))
+		create_file(data_index_path, shared.Get_numero_bytes(1))
 		create_file(data_zero_path, "")
 	}
 
