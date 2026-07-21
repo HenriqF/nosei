@@ -50,13 +50,13 @@ func main() {
 		_, err := data.Carregar_tabela("tabela")
 		shared.Err_hand(err, "deu ruim")
 
-		op, err := ops.Preparar_operacao("index == 'sigma dabahia'")
+		op, err := ops.Preparar_operacao(" 'nome#1' == dados ")
 
 		shared.Err_hand(err, "deu ruim")
 
-		_, err = ops.Processar_tabela_carregada("tabela", op)
+		res, err := ops.Processar_tabela_carregada("tabela", op)
 
-		//data.Show_tabela_carregada_indexes("tabela", res)
+		data.Show_tabela_carregada_indexes("tabela", res)
 
 		shared.Err_hand(err, "deu merda")
 	}

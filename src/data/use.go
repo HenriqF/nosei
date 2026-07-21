@@ -498,6 +498,8 @@ func Show_tabela_carregada(nome_tabela string) {
 
 // mostra o conteudo dentro de shared.Tabela_carregada com as regras de nome_tabela onde index está dentro de index_s
 func Show_tabela_carregada_indexes(nome_tabela string, index_s map[int]bool) {
+	// return
+
 	tabela_index, err := Get_tabela_index(nome_tabela)
 	if err != nil {
 		return
