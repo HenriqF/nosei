@@ -2,6 +2,7 @@ package ops
 
 import (
 	"errors"
+	"fmt"
 	"nosei/data"
 	"nosei/shared"
 	"strconv"
@@ -21,6 +22,7 @@ const (
 	rune_numero
 	rune_op
 	rune_delim
+	rune_string
 	rune_default
 )
 
@@ -51,7 +53,7 @@ func get_char_tipo(input rune) rune_tipo {
 		return rune_op
 	}
 
-	if input == '(' || input == ')' {
+	if input == '(' || input == ')' || input == '\'' || input == '"' {
 		return rune_delim
 	}
 
@@ -97,20 +99,61 @@ func get_token_precedence(t token) int {
 	return -67
 }
 
+func find_string_end(op string, i int) int {
+	pair := rune(op[i])
+	size := len(op) - 1
+
+	i++
+	for {
+		c := rune(op[i])
+		ct := get_char_tipo(c)
+
+		if ct == rune_delim && c == pair {
+			break
+		}
+
+		if i == size {
+			return -1
+		}
+
+		i++
+	}
+
+	return i
+}
+
 func get_tokens(input string) ([]token, error) {
 	var tokens []token
-	var current_token string
 
+	var current_token string
 	previous_rune := rune_default
 
-	for _, c := range input {
+	for i := 0; i < len(input); i++ {
+		c := rune(input[i])
 		ct := get_char_tipo(c)
+
+		if c == '\'' || c == '"' {
+			end := find_string_end(input, i)
+			if end < 0 {
+				return nil, errors.New("string nao terminada")
+			}
+
+			tokens = append(tokens, token{input[i+1 : end], 0, rune_string})
+
+			i = end + 1
+			current_token = ""
+			previous_rune = rune_default
+
+			continue
+		}
+
 		if ct != previous_rune || ct == rune_delim {
 			if previous_rune != rune_default {
 				tokens = append(tokens, token{current_token, 0, previous_rune})
 			}
 			current_token = ""
 		}
+
 		current_token += string(c)
 		previous_rune = ct
 	}
@@ -155,7 +198,7 @@ func ordenar_tokens(input []token) ([]token, error) {
 	var final []token
 
 	for _, t := range input {
-		if t.tipo == rune_nome || t.tipo == rune_numero {
+		if t.tipo == rune_nome || t.tipo == rune_numero || t.tipo == rune_string {
 			final = append(final, t)
 			continue
 		}
@@ -247,7 +290,7 @@ func eval_operacao(input []token) (int, error) {
 		}
 
 		if len(stack) == 0 {
-			return 0, errors.New("operacao malformada")
+			return 0, errors.New("operacao malfarmada")
 		}
 		a := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
@@ -321,6 +364,8 @@ func Preparar_operacao(input string) ([]token, error) {
 		return nil, err
 	}
 
+	fmt.Println(toks)
+
 	toks_p, err := ordenar_tokens(toks)
 	if err != nil {
 		return nil, err
@@ -362,8 +407,6 @@ func trocar_nome_por_valor(operacao []token, regras []shared.Rule, tabela [][]by
 }
 
 func Processar_tabela_carregada(nome_tabela string, operacao []token) (map[int]bool, error) {
-	//operacoes com string
-
 	tabela_index, err := data.Get_tabela_index(nome_tabela)
 	if err != nil {
 		return nil, err
@@ -375,7 +418,7 @@ func Processar_tabela_carregada(nome_tabela string, operacao []token) (map[int]b
 	for _, t := range shared.Tabela_carregada {
 		op, err := trocar_nome_por_valor(operacao, regras, t)
 
-		// fmt.Println(op)
+		fmt.Println(op)
 		if err != nil {
 			return nil, err
 		}

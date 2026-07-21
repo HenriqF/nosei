@@ -35,7 +35,7 @@ func main() {
 		data.Usar_banco("beta")
 
 		init := time.Now()
-		for i := 0; i < 3; i++ {
+		for i := 0; i < 100; i++ {
 			_, err := data.Nova_entrada("tabela", []string{
 				fmt.Sprintf("nome#%v", i),
 				fmt.Sprintf("%v", i),
@@ -50,10 +50,13 @@ func main() {
 		_, err := data.Carregar_tabela("tabela")
 		shared.Err_hand(err, "deu ruim")
 
-		op, err := ops.Preparar_operacao("index != 200")
+		op, err := ops.Preparar_operacao("index == 'sigma dabahia'")
+
 		shared.Err_hand(err, "deu ruim")
 
 		_, err = ops.Processar_tabela_carregada("tabela", op)
+
+		//data.Show_tabela_carregada_indexes("tabela", res)
 
 		shared.Err_hand(err, "deu merda")
 	}

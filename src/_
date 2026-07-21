@@ -20,3 +20,20 @@ vazioindex:
     numero -> primeiro
 
 5b746162656c615d0a2020202034303936206c6574726173202d3e206461646f730a202020206e756d65726f202d3e207072696d6569726f
+
+
+=======================================================================
+{} -> normal
+() -> HEX
+? -> marca passado como opcional
+
+usar {nome banco}
+novo {nome banco} (esquema)
+
+ins {tabela} (dados...)
+peg {tabela} (operacao)?
+del {tabela} (index)
+atu {tabela} (operacao) (dados...)
+
+
+ainda nao sei do atu

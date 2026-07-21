@@ -1,5 +1,7 @@
 package ponte
 
+//orquestrar comunicacoes mais complexas
+
 import (
 	"encoding/hex"
 	"errors"
@@ -11,7 +13,32 @@ import (
 	"time"
 )
 
-//orquestrar comunicacoes mais complexas
+// args: novo nome_banco regras
+func Input_novo_banco(args []string) (string, error) {
+	args = args[1:]
+	if len(args) != 2 {
+		return "", errors.New("quantia de argumentos indevidos para criação de banco\n")
+	}
+	shared.Nome_input = args[0]
+	regras, err := hex.DecodeString(args[1])
+	if err != nil {
+		return "", errors.New("erro com expressão hex\n")
+	}
+
+	fmt.Println(string(regras))
+
+	_, err = data.Parse_rules(string(regras))
+	if err != nil {
+		return "", err
+	}
+
+	echo, err := data.Create_db()
+	if err != nil {
+		return "", err
+	}
+
+	return echo, nil
+}
 
 // args: put nome_tabela regras...
 func Input_nova_entrada(args []string) (string, error) {
@@ -84,33 +111,6 @@ func Input_update_entrada(args []string) (string, error) {
 	}
 
 	return echo + fmt.Sprintf("%v\n", d), nil
-}
-
-// args: novo nome_banco regras
-func Input_novo_banco(args []string) (string, error) {
-	args = args[1:]
-	if len(args) != 2 {
-		return "", errors.New("quantia de argumentos indevidos para criação de banco\n")
-	}
-	shared.Nome_input = args[0]
-	regras, err := hex.DecodeString(args[1])
-	if err != nil {
-		return "", errors.New("erro com expressão hex\n")
-	}
-
-	fmt.Println(string(regras))
-
-	_, err = data.Parse_rules(string(regras))
-	if err != nil {
-		return "", err
-	}
-
-	echo, err := data.Create_db()
-	if err != nil {
-		return "", err
-	}
-
-	return echo, nil
 }
 
 // args: get nome_tabela (operacao)?

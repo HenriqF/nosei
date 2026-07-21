@@ -10,16 +10,6 @@ import (
 	"strconv"
 )
 
-func get_file_length(file string) int {
-	fileinfo, err := os.Stat(file)
-	if err != nil {
-		return -1
-	}
-
-	filesize := int(fileinfo.Size())
-	return filesize
-}
-
 // carregras as regras do banco e seu caminho
 // (shared.Bd_carregado_path,
 // shared.Tabelas)
@@ -269,18 +259,31 @@ func preparar_bloco_entrada(tabela_index int, dados []string, file_pos int) (str
 
 // retorna uma posicao em autoindex que pode ser reocupada
 func pop_ifcan_vazioindex(path string) int {
-	len := get_file_length(path)
+	file, err := os.OpenFile(path, os.O_RDWR, 0666)
+	if err != nil {
+		return -1
+	}
+	defer file.Close()
+
+	fileinfo, err := file.Stat()
+	if err != nil {
+		return -1
+	}
+	len := fileinfo.Size()
+
 	if len <= 0 {
 		return -1
 	}
 
-	cont, err := os.ReadFile(path)
-	if err != nil {
+	pos := len - int64(shared.Default_num_size)
+
+	ptr := make([]byte, shared.Default_num_size)
+	_, err = file.ReadAt(ptr, pos)
+	if err != nil && err != io.EOF {
 		return -1
 	}
-	ptr := cont[len-shared.Default_num_size:]
 
-	os.Truncate(path, int64(len-shared.Default_num_size))
+	file.Truncate(pos)
 	return shared.Get_bytes_numerob(ptr)
 }
 
@@ -294,11 +297,6 @@ func Nova_entrada(nome_tabela string, dados []string) (string, error) {
 	tabela_path := filepath.Join(shared.Bd_carregado_path, nome_tabela)
 	autoindex_path := filepath.Join(tabela_path, "autoindex.ns")
 	vazioindex_path := filepath.Join(tabela_path, "vazioindex.ns")
-
-	datafile_path, datafile_length, datafile_index, err := prepare_data_files(tabela_path)
-	if err != nil {
-		return "", err
-	}
 
 	empty_pos := pop_ifcan_vazioindex(vazioindex_path)
 	if empty_pos >= 0 {
@@ -332,13 +330,19 @@ func Nova_entrada(nome_tabela string, dados []string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return "feito\n", nil
+		return "", nil
+	}
+
+	datafile_path, datafile_length, datafile_index, err := prepare_data_files(tabela_path)
+	if err != nil {
+		return "", err
 	}
 
 	bloco_data, err := preparar_bloco_entrada(tabela_index, dados, datafile_length)
 	if err != nil {
 		return "", err
 	}
+
 	append_to_file(datafile_path, bloco_data)
 	resp, err := update_autoindex(autoindex_path, datafile_index, datafile_length)
 	if err != nil {

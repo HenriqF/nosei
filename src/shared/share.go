@@ -7,7 +7,7 @@ import (
 )
 
 const Max_data_file_bytes int = 256000
-// const Max_data_file_bytes int = 1000
+// const Max_data_file_bytes int = 4000
 
 const Default_num_size int = 4
 

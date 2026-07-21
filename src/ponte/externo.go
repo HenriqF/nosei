@@ -53,7 +53,7 @@ func handle_input(input string) string {
 		}
 		return echo
 
-	case "update":
+	case "upd":
 		echo, err := Input_update_entrada(separado)
 		if err != nil {
 			return err.Error()

@@ -8,14 +8,14 @@
 
 [pop]
     goto: build
-    run: .\nosei testepopular
+    run: .\nosei terminal
     goto: cleanup
     end
 
 [main]
     goto: build
 
-    run: .\nosei terminal
+    run: .\nosei testeops
 
     goto: cleanup
     end
