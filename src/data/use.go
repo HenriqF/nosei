@@ -1,6 +1,7 @@
 package data
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -71,6 +72,20 @@ func Process_data_tipo_read(valor string, tipo shared.Regra_tipo) (string, error
 		return numero, nil
 	default:
 		return "", errors.New("sigma")
+	}
+}
+
+func Process_data_tipo_send(valor []byte, tipo shared.Regra_tipo) ([]byte, error) {
+	switch tipo {
+	case shared.Tipo_texto:
+		return bytes.TrimRight(valor, "\x00"), nil
+
+	case shared.Tipo_numero:
+		numero := strconv.Itoa(shared.Get_bytes_numerob(valor))
+
+		return []byte(numero), nil
+	default:
+		return nil, errors.New("sigma")
 	}
 }
 
@@ -493,23 +508,31 @@ func Show_tabela_carregada(nome_tabela string, res_busca bool, ret bool) string 
 		tabela = shared.Tabela_carregada
 	}
 
-	ret_val := ""
+	var ret_val []byte
 	for i := range tabela {
 		for j, d := range tabela[i] {
 			if j > 0 {
-				processado, err := Process_data_tipo_read(string(d), regras[j-1].Tipo)
-				if err != nil {
-					return ""
-				}
 
 				if ret {
-					ret_val += fmt.Sprintf("%v -> %v\n", regras[j-1].Descritor, processado)
+					processado, err := Process_data_tipo_send(d, regras[j-1].Tipo)
+					if err != nil {
+						return ""
+					}
+
+					ret_val = append(ret_val, shared.Get_numero_bytesb(len(processado))...)
+					ret_val = append(ret_val, processado...)
 				} else {
+					processado, err := Process_data_tipo_read(string(d), regras[j-1].Tipo)
+					if err != nil {
+						return ""
+					}
 					fmt.Printf("%v -> %v\n", regras[j-1].Descritor, processado)
 				}
 			} else {
 				if ret {
-					ret_val += fmt.Sprintf("\nindex -> %v\n", shared.Get_bytes_numero(string(d)))
+					ret_val = append(ret_val, shared.Get_numero_bytesb(len(d))...)
+					ret_val = append(ret_val, d...)
+					//ret_val += fmt.Sprintf("\nindex -> %v\n", shared.Get_bytes_numero(string(d)))
 				} else {
 					fmt.Printf("\nindex -> %v\n", shared.Get_bytes_numero(string(d)))
 				}
@@ -517,7 +540,7 @@ func Show_tabela_carregada(nome_tabela string, res_busca bool, ret bool) string 
 		}
 	}
 
-	return ret_val
+	return string(ret_val)
 }
 
 func Get_tabela_rules(nome_tabela string) ([]shared.Rule, error) {

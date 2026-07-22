@@ -37,3 +37,15 @@ ok  put {tabela} (dados...)
     get {tabela} (operacao)?
 ok  del {tabela} (index)
 ok  upd {tabela} (index) (dados...)
+
+
+RECEBIMENTO:
+
+index ->
+nome ->
+numero ->
+
+
+[tamanho index][index][tamanho nome][nome][tamanho numero][numero]
+[4 bytes] [1105] [1 byte] [a] [2 byte] [99]
+0 0 0 2 57 57

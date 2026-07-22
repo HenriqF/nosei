@@ -140,8 +140,8 @@ func Input_get_tabela(args []string) (string, error) {
 	case hand_term:
 		data.Show_tabela_carregada(args[0], busca, false)
 	case hand_web:
-		dados := data.Show_tabela_carregada(args[0], busca, true)
-		return dados, nil
+		res := data.Show_tabela_carregada(args[0], busca, true)
+		return res, nil
 	}
 
 	return "mostrando\n", nil

@@ -72,6 +72,15 @@ func Get_numero_bytes(numero int) string {
 	return string(bytes)
 }
 
+func Get_numero_bytesb(numero int) []byte {
+	//return strconv.Itoa(numero)
+
+	bytes := make([]byte, Default_num_size)
+	binary.BigEndian.PutUint32(bytes, uint32(numero))
+
+	return bytes
+}
+
 func Get_bytes_numero(str string) int {
 	n := binary.BigEndian.Uint32([]byte(str))
 
