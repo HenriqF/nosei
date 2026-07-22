@@ -5,15 +5,12 @@ package ponte
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"nosei/data"
 	"nosei/ops"
 	"nosei/shared"
 	"strconv"
-	"time"
 )
 
-// args: novo nome_banco regras
 func Input_novo_banco(args []string) (string, error) {
 	args = args[1:]
 	if len(args) != 2 {
@@ -25,7 +22,7 @@ func Input_novo_banco(args []string) (string, error) {
 		return "", errors.New("erro com expressão hex\n")
 	}
 
-	fmt.Println(string(regras))
+	// fmt.Println(string(regras))
 
 	_, err = data.Parse_rules(string(regras))
 	if err != nil {
@@ -37,10 +34,11 @@ func Input_novo_banco(args []string) (string, error) {
 		return "", err
 	}
 
-	return echo, nil
+	echo_b, err := data.Usar_banco(args[0])
+
+	return echo + echo_b, nil
 }
 
-// args: put nome_tabela regras...
 func Input_nova_entrada(args []string) (string, error) {
 	if len(args) < 2 {
 		return "", errors.New("comando de inserir incompleto\n")
@@ -62,18 +60,15 @@ func Input_nova_entrada(args []string) (string, error) {
 		args[i] = string(r)
 	}
 
-	t := time.Now()
 	echo, err := data.Nova_entrada(args[1], args[2:])
-	d := time.Since(t)
 
 	if err != nil {
 		return "", err
 	}
 
-	return echo + fmt.Sprintf("%v\n", d), nil
+	return echo, nil
 }
 
-// args: update nome_tabela index regras...
 func Input_update_entrada(args []string) (string, error) {
 	if len(args) < 3 {
 		return "", errors.New("comando de update incompleto\n")
@@ -82,7 +77,6 @@ func Input_update_entrada(args []string) (string, error) {
 	r, _ := data.Get_tabela_rules(args[1])
 	esperado := len(r)
 
-	println(esperado, len(args)-3)
 	if len(args)-3 != esperado {
 		return "", errors.New("quantia de argumentos indevidos para tabela\n")
 	}
@@ -101,36 +95,29 @@ func Input_update_entrada(args []string) (string, error) {
 		return "", errors.New("Numero de index malformado\n")
 	}
 
-	println(args[1], index, args[3:])
-	t := time.Now()
 	echo, err := data.Update_entrada(args[1], index, args[3:])
-	d := time.Since(t)
 
 	if err != nil {
 		return "", err
 	}
 
-	return echo + fmt.Sprintf("%v\n", d), nil
+	return echo, nil
 }
 
-// args: get nome_tabela (operacao)?
-// se operacao != 0, tabela é mostrada.
-func Input_ver_tabela(args []string) (string, error) {
+func Input_get_tabela(args []string) (string, error) {
 	args = args[1:]
 	if len(args) <= 0 {
 		return "", errors.New("É necessár io um nome de tabela\n")
 	}
 
-	t := time.Now()
 	_, err := data.Carregar_tabela(args[0])
-	dt := time.Since(t)
 	if err != nil {
 		return "", err
 	}
 
 	if len(args) != 2 {
-		data.Show_tabela_carregada(args[0])
-		return fmt.Sprintf("mostrando (busca: %v)\n", dt), nil
+		data.Show_tabela_carregada(args[0], false)
+		return "mostrando\n", nil
 	}
 
 	expressao, err := hex.DecodeString(args[1])
@@ -143,37 +130,36 @@ func Input_ver_tabela(args []string) (string, error) {
 		return "", err
 	}
 
-	t = time.Now()
-	res, err := ops.Processar_tabela_carregada(args[0], op)
-	dt = time.Since(t)
+	err = ops.Processar_tabela_carregada(args[0], op)
 
 	if err != nil {
 		return "", err
 	}
 
-	data.Show_tabela_carregada_indexes(args[0], res)
-
-	return fmt.Sprintf("mostrando (busca: %v)\n", dt), nil
+	data.Show_tabela_carregada(args[0], true)
+	return "mostrando\n", nil
 }
 
-// args: del nome_tabela index?
 func Input_deletar_entrada(args []string) (string, error) {
 	args = args[1:]
-	if len(args) < 2 {
+	if len(args) != 2 {
 		return "", errors.New("É necessário um nome de tabela e index\n")
 	}
 
-	numero, err := strconv.Atoi(args[1])
+	numero_hex, err := hex.DecodeString(args[1])
+	if err != nil {
+		return "", errors.New("Numero de index malformado\n")
+	}
+	numero, err := strconv.Atoi(string(numero_hex))
 	if err != nil {
 		return "", errors.New("Numero de index malformado\n")
 	}
 
-	t := time.Now()
 	echo, err := data.Deletar_entrada(args[0], numero)
-	d := time.Since(t)
+
 	if err != nil {
 		return "", err
 	}
 
-	return echo + fmt.Sprintf("%v\n", d), nil
+	return echo, nil
 }

@@ -446,31 +446,59 @@ func trocar_nome_por_valor(operacao []token, regras []shared.Rule, tabela [][]by
 	return operacao, nil
 }
 
-func Processar_tabela_carregada(nome_tabela string, operacao []token) (map[int]bool, error) {
+// processa os dados de shared.Tabela_carregada, usando operacao e os coloca em
+// (shared.Tabela_res_busca) para uso posterior
+func Processar_tabela_carregada(nome_tabela string, operacao []token) error {
 	tabela_index, err := data.Get_tabela_index(nome_tabela)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	regras := shared.Tabelas[tabela_index].Rules
-
 	corretos := make(map[int]bool)
+
 	for _, t := range shared.Tabela_carregada {
 		op, err := trocar_nome_por_valor(operacao, regras, t)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		res, err := eval_operacao(op)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if res != 0 {
 			corretos[shared.Get_bytes_numero(string(t[0]))] = true
-			//fmt.Printf("index: %v\n", shared.Get_bytes_numero(string(t[0])))
 		}
 	}
 
-	return corretos, nil
+	shared.Tabela_res_busca = nil
+	for i := range shared.Tabela_carregada {
+		var tab [][]byte
+		tab_cor := false
+
+		for j, d := range shared.Tabela_carregada[i] {
+			if j > 0 {
+				_, err := data.Process_data_tipo_read(string(d), regras[j-1].Tipo)
+				if err != nil {
+					return err
+				}
+				tab = append(tab, d)
+			} else {
+				idx := shared.Get_bytes_numero(string(d))
+				if !corretos[idx] {
+					break
+				}
+				tab_cor = true
+				tab = append(tab, d)
+			}
+		}
+
+		if tab_cor {
+			shared.Tabela_res_busca = append(shared.Tabela_res_busca, tab)
+		}
+	}
+
+	return nil
 }

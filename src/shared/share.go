@@ -7,6 +7,7 @@ import (
 )
 
 const Max_data_file_bytes int = 256000
+
 // const Max_data_file_bytes int = 4000
 
 const Default_num_size int = 4
@@ -46,6 +47,7 @@ var (
 	Bd_carregado_path     string
 	Tabela_carregada      [][][]byte
 	Nome_tabela_carregada string
+	Tabela_res_busca      [][][]byte
 )
 
 func Split_fixed(s string, n int) []string {

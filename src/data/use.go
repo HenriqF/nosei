@@ -59,7 +59,7 @@ func process_data_tipo_store(valor string, regra shared.Rule) (string, error) {
 	}
 }
 
-func process_data_tipo_read(valor string, tipo shared.Regra_tipo) (string, error) {
+func Process_data_tipo_read(valor string, tipo shared.Regra_tipo) (string, error) {
 	switch tipo {
 	case shared.Tipo_texto:
 		return valor, nil
@@ -330,7 +330,7 @@ func Nova_entrada(nome_tabela string, dados []string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return "", nil
+		return "feito\n", nil
 	}
 
 	datafile_path, datafile_length, datafile_index, err := prepare_data_files(tabela_path)
@@ -454,7 +454,7 @@ func get_entradas_from_datafile(datafile_path string, indexes []string, tabela_i
 			//col_rule := shared.Tabelas[tabela_index].Rules[j]
 			raw_data := cont[read_from:to_read]
 			linha = append(linha, raw_data)
-			//data, err := process_data_tipo_read(string(cont[read_from:to_read]), col_rule.tipo)
+			//data, err := Process_data_tipo_read(string(cont[read_from:to_read]), col_rule.tipo)
 			// if err != nil {
 			// 	return nil, err
 			// }
@@ -472,7 +472,7 @@ func get_entradas_from_datafile(datafile_path string, indexes []string, tabela_i
 }
 
 // mostra o conteudo dentro de shared.Tabela_carregada com as regras de nome_tabela
-func Show_tabela_carregada(nome_tabela string) {
+func Show_tabela_carregada(nome_tabela string, res_busca bool) {
 	tabela_index, err := Get_tabela_index(nome_tabela)
 	if err != nil {
 		return
@@ -480,10 +480,17 @@ func Show_tabela_carregada(nome_tabela string) {
 
 	regras := shared.Tabelas[tabela_index].Rules
 
-	for i := range shared.Tabela_carregada {
-		for j, d := range shared.Tabela_carregada[i] {
+	var tabela [][][]byte
+	if res_busca {
+		tabela = shared.Tabela_res_busca
+	} else {
+		tabela = shared.Tabela_carregada
+	}
+
+	for i := range tabela {
+		for j, d := range tabela[i] {
 			if j > 0 {
-				processado, err := process_data_tipo_read(string(d), regras[j-1].Tipo)
+				processado, err := Process_data_tipo_read(string(d), regras[j-1].Tipo)
 				if err != nil {
 					return
 				}
@@ -491,35 +498,6 @@ func Show_tabela_carregada(nome_tabela string) {
 				fmt.Printf("%v -> %v\n", regras[j-1].Descritor, processado)
 			} else {
 				fmt.Printf("\nindex -> %v\n", shared.Get_bytes_numero(string(d)))
-			}
-		}
-	}
-}
-
-// mostra o conteudo dentro de shared.Tabela_carregada com as regras de nome_tabela onde index está dentro de index_s
-func Show_tabela_carregada_indexes(nome_tabela string, index_s map[int]bool) {
-	// return
-
-	tabela_index, err := Get_tabela_index(nome_tabela)
-	if err != nil {
-		return
-	}
-	regras := shared.Tabelas[tabela_index].Rules
-
-	for i := range shared.Tabela_carregada {
-		for j, d := range shared.Tabela_carregada[i] {
-			if j > 0 {
-				processado, err := process_data_tipo_read(string(d), regras[j-1].Tipo)
-				if err != nil {
-					return
-				}
-				fmt.Printf("%v -> %v\n", regras[j-1].Descritor, processado)
-			} else {
-				idx := shared.Get_bytes_numero(string(d))
-				if !index_s[idx] {
-					break
-				}
-				fmt.Printf("\nindex -> %v\n", idx)
 			}
 		}
 	}
@@ -536,10 +514,6 @@ func Get_tabela_rules(nome_tabela string) ([]shared.Rule, error) {
 // coloca os dados da tabela nome_tabela em
 // (shared.Nome_tabela_carregada, shared.Tabela_carregada) para uso posterior
 func Carregar_tabela(nome_tabela string) (string, error) {
-	// if shared.Nome_tabela_carregada == nome_tabela {
-	// 	return "tabela já está carregada\n", nil
-	// }
-
 	shared.Tabela_carregada = nil
 	shared.Nome_tabela_carregada = ""
 

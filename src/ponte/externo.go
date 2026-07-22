@@ -47,7 +47,7 @@ func handle_input(input string) string {
 		return echo
 
 	case "get":
-		echo, err := Input_ver_tabela(separado)
+		echo, err := Input_get_tabela(separado)
 		if err != nil {
 			return err.Error()
 		}
@@ -71,6 +71,14 @@ func handle_input(input string) string {
 	return ""
 }
 
+func format_output(input string) string {
+	if input[len(input)-1] != '\n' {
+		return input + "\n"
+	}
+
+	return input
+}
+
 func web_talk(c net.Conn) {
 	defer c.Close()
 	reader := bufio.NewReader(c)
@@ -83,6 +91,7 @@ func web_talk(c net.Conn) {
 
 		clean := strings.TrimSpace(msg)
 		answer := handle_input(clean)
+		answer = format_output(answer)
 
 		_, err = c.Write([]byte(answer))
 		if err != nil {
@@ -112,6 +121,7 @@ func Terminal_request_hand() {
 
 		clean := strings.TrimSpace(resposta)
 		answer := handle_input(clean)
+		answer = format_output(answer)
 
 		fmt.Printf("%v", answer)
 	}

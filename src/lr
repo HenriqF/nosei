@@ -15,7 +15,7 @@
 [main]
     goto: build
 
-    run: .\nosei testeops
+    run: .\nosei terminal
 
     goto: cleanup
     end

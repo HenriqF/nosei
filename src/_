@@ -16,10 +16,13 @@ vazioindex:
 5b746162656c615d0a202020203230206c6574726173202d3e206461646f730a202020206e756d65726f202d3e207072696d6569726f0a
 
 [tabela]
-    4096 letras -> dados
+    20 letras -> dados
     numero -> primeiro
+    30 letras -> nome
+    numero -> segundo
+    numero -> terceiro
 
-5b746162656c615d0a2020202034303936206c6574726173202d3e206461646f730a202020206e756d65726f202d3e207072696d6569726f
+0a5b746162656c615d0a202020203230206c6574726173202d3e206461646f730a202020206e756d65726f202d3e207072696d6569726f0a202020203330206c6574726173202d3e206e6f6d650a202020206e756d65726f202d3e20736567756e646f0a202020206e756d65726f202d3e20746572636569726f
 
 
 =======================================================================
@@ -27,13 +30,10 @@ vazioindex:
 () -> HEX
 ? -> marca passado como opcional
 
-usar {nome banco}
-novo {nome banco} (esquema)
+ok  usar {nome banco} 
+ok  novo {nome banco} (esquema)
 
-ins {tabela} (dados...)
-peg {tabela} (operacao)?
-del {tabela} (index)
-atu {tabela} (operacao) (dados...)
-
-
-ainda nao sei do atu
+ok  put {tabela} (dados...)
+    get {tabela} (operacao)?
+ok  del {tabela} (index)
+ok  upd {tabela} (index) (dados...)
