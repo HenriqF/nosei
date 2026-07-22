@@ -106,7 +106,7 @@ func Input_update_entrada(args []string) (string, error) {
 
 func Input_get_tabela(args []string) (string, error) {
 	args = args[1:]
-	if len(args) <= 0 {
+	if len(args) != 1 && len(args) != 2 {
 		return "", errors.New("É necessár io um nome de tabela\n")
 	}
 
@@ -115,28 +115,35 @@ func Input_get_tabela(args []string) (string, error) {
 		return "", err
 	}
 
-	if len(args) != 2 {
-		data.Show_tabela_carregada(args[0], false)
-		return "mostrando\n", nil
+	busca := false
+	if len(args) == 2 {
+		busca = true
+
+		expressao, err := hex.DecodeString(args[1])
+		if err != nil {
+			return "", errors.New("erro com expressão hex\n")
+		}
+
+		op, err := ops.Preparar_operacao(string(expressao))
+		if err != nil {
+			return "", err
+		}
+
+		err = ops.Processar_tabela_carregada(args[0], op)
+
+		if err != nil {
+			return "", err
+		}
 	}
 
-	expressao, err := hex.DecodeString(args[1])
-	if err != nil {
-		return "", errors.New("erro com expressão hex\n")
+	switch current_hand_type {
+	case hand_term:
+		data.Show_tabela_carregada(args[0], busca, false)
+	case hand_web:
+		dados := data.Show_tabela_carregada(args[0], busca, true)
+		return dados, nil
 	}
 
-	op, err := ops.Preparar_operacao(string(expressao))
-	if err != nil {
-		return "", err
-	}
-
-	err = ops.Processar_tabela_carregada(args[0], op)
-
-	if err != nil {
-		return "", err
-	}
-
-	data.Show_tabela_carregada(args[0], true)
 	return "mostrando\n", nil
 }
 

@@ -27,21 +27,25 @@ func path_exists(path string, is_folder bool) bool {
 	return !is_folder
 }
 
-func create_folder(path string) {
+func create_folder(path string) error {
 	err := os.MkdirAll(path, 0755)
-	shared.Err_hand(err, "criar BD")
+	return err
 }
 
-func create_file(path string, content string) {
+func create_file(path string, content string) error {
 	if path_exists(path, false) {
-		return
+		return nil
 	}
 
 	file, err := os.Create(path)
-	shared.Err_hand(err, "create_file")
+	if err != nil {
+		return err
+	}
 	defer file.Close()
 
 	file.Write([]byte(content))
+
+	return nil
 }
 
 func Create_db() (string, error) {
@@ -52,7 +56,10 @@ func Create_db() (string, error) {
 		return "", fmt.Errorf("banco já existe [%v]\n", db_path)
 	}
 
-	create_folder(db_path)
+	err := create_folder(db_path)
+	if err != nil {
+		return "", err
+	}
 
 	var regras_fix string
 	for i := 1; i < len(shared.Tabelas); i++ {
@@ -78,7 +85,10 @@ func Create_db() (string, error) {
 		create_file(data_zero_path, "")
 	}
 
-	create_file(rule_path, regras_fix)
+	err = create_file(rule_path, regras_fix)
+	if err != nil {
+		return "", err
+	}
 
 	return "Criado\n", nil
 }

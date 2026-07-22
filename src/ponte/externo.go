@@ -11,6 +11,15 @@ import (
 	"strings"
 )
 
+type hand_type int
+
+const (
+	hand_term hand_type = iota
+	hand_web
+)
+
+var current_hand_type hand_type
+
 func handle_input(input string) string {
 	var echo string
 	var err error
@@ -72,6 +81,10 @@ func handle_input(input string) string {
 }
 
 func format_output(input string) string {
+	if input == ""{
+		return "\n"
+	}
+
 	if input[len(input)-1] != '\n' {
 		return input + "\n"
 	}
@@ -102,19 +115,21 @@ func web_talk(c net.Conn) {
 
 func Web_request_hand(port string) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", port))
-	shared.Err_hand(err, "init")
+	shared.Confirmar(err, "init")
 	defer listener.Close()
 
 	fmt.Printf("rodando: localhost:6767\n")
+	current_hand_type = hand_web
 
 	for {
 		c, err := listener.Accept()
-		shared.Err_hand(err, "accept")
+		shared.Confirmar(err, "accept")
 		web_talk(c)
 	}
 }
 
 func Terminal_request_hand() {
+	current_hand_type = hand_term
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		resposta := scanner.Text()

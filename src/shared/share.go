@@ -88,13 +88,13 @@ func Get_bytes_numerob(bytes []byte) int {
 	return int(m)
 }
 
-func Err_hand(err error, msg string) {
+func Confirmar(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%v\n\ndeu merda:\n\n%v\n", msg, err)
 	}
 }
 
-func Nc_err_hand(err error, msg string) bool {
+func Nc_confirmar(err error, msg string) bool {
 	if err != nil {
 		fmt.Printf("%v\n\ndeu merda:\n\n%v\n", msg, err)
 		return true

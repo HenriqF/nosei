@@ -15,7 +15,7 @@
 [main]
     goto: build
 
-    run: .\nosei terminal
+    run: .\nosei web
 
     goto: cleanup
     end

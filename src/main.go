@@ -25,40 +25,31 @@ func main() {
 	case "terminal":
 		ponte.Terminal_request_hand()
 
-	case "testeshow":
-		data.Usar_banco("beta")
-		echo, _ := data.Carregar_tabela("tabela")
-		fmt.Println(echo)
-		data.Show_tabela_carregada("tabela", false)
-
 	case "testepopular":
-		data.Usar_banco("aura")
+		data.Usar_banco("beta")
 
 		init := time.Now()
 		for i := 0; i < 1000; i++ {
 			_, err := data.Nova_entrada("tabela", []string{
 				fmt.Sprintf("dados#%v", i),
 				fmt.Sprintf("%v", rand.IntN(1000)),
-				fmt.Sprintf("nome#%v", i+1),
-				fmt.Sprintf("%v", rand.IntN(1000)),
-				fmt.Sprintf("%v", rand.IntN(1000)),
 			})
 
-			shared.Err_hand(err, "vai saber")
+			shared.Confirmar(err, "vai saber")
 		}
 		fmt.Println(time.Since(init))
 
 	case "testeops":
 		data.Usar_banco("beta")
 		_, err := data.Carregar_tabela("tabela")
-		shared.Err_hand(err, "deu ruim")
+		shared.Confirmar(err, "deu ruim")
 
 		op, err := ops.Preparar_operacao(" 'nome#1' == dados ")
 
-		shared.Err_hand(err, "deu ruim")
+		shared.Confirmar(err, "deu ruim")
 
 		err = ops.Processar_tabela_carregada("tabela", op)
 
-		shared.Err_hand(err, "deu merda")
+		shared.Confirmar(err, "deu merda")
 	}
 }

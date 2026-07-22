@@ -28,7 +28,9 @@ func Usar_banco(qual string) (string, error) {
 	}
 
 	regras, err := os.ReadFile(rules_path)
-	shared.Err_hand(err, "abrir regras usar banco")
+	if err != nil {
+		return "", err
+	}
 
 	_, err = Parse_rules(string(regras))
 	if err != nil {
@@ -131,7 +133,11 @@ func prepare_data_files(tabela_path string) (string, int, int, error) {
 	data_index++
 	datafile_path = filepath.Join(tabela_path, "data", fmt.Sprintf("data%v.nsd", data_index))
 
-	create_file(datafile_path, "")
+	err = create_file(datafile_path, "")
+	if err != nil {
+		return "", 0, 0, err
+	}
+
 	err = overwrite_file_from_pos(dataindex_path, shared.Get_numero_bytes(data_index), 0)
 	if err != nil {
 		return "", 0, 0, err
@@ -472,10 +478,10 @@ func get_entradas_from_datafile(datafile_path string, indexes []string, tabela_i
 }
 
 // mostra o conteudo dentro de shared.Tabela_carregada com as regras de nome_tabela
-func Show_tabela_carregada(nome_tabela string, res_busca bool) {
+func Show_tabela_carregada(nome_tabela string, res_busca bool, ret bool) string {
 	tabela_index, err := Get_tabela_index(nome_tabela)
 	if err != nil {
-		return
+		return ""
 	}
 
 	regras := shared.Tabelas[tabela_index].Rules
@@ -487,20 +493,31 @@ func Show_tabela_carregada(nome_tabela string, res_busca bool) {
 		tabela = shared.Tabela_carregada
 	}
 
+	ret_val := ""
 	for i := range tabela {
 		for j, d := range tabela[i] {
 			if j > 0 {
 				processado, err := Process_data_tipo_read(string(d), regras[j-1].Tipo)
 				if err != nil {
-					return
+					return ""
 				}
 
-				fmt.Printf("%v -> %v\n", regras[j-1].Descritor, processado)
+				if ret {
+					ret_val += fmt.Sprintf("%v -> %v\n", regras[j-1].Descritor, processado)
+				} else {
+					fmt.Printf("%v -> %v\n", regras[j-1].Descritor, processado)
+				}
 			} else {
-				fmt.Printf("\nindex -> %v\n", shared.Get_bytes_numero(string(d)))
+				if ret {
+					ret_val += fmt.Sprintf("\nindex -> %v\n", shared.Get_bytes_numero(string(d)))
+				} else {
+					fmt.Printf("\nindex -> %v\n", shared.Get_bytes_numero(string(d)))
+				}
 			}
 		}
 	}
+
+	return ret_val
 }
 
 func Get_tabela_rules(nome_tabela string) ([]shared.Rule, error) {
