@@ -530,8 +530,13 @@ func Show_tabela_carregada(nome_tabela string, res_busca bool, ret bool) string 
 				}
 			} else {
 				if ret {
-					ret_val = append(ret_val, shared.Get_numero_bytesb(len(d))...)
-					ret_val = append(ret_val, d...)
+					processado, err := Process_data_tipo_send(d, shared.Tipo_numero)
+					if err != nil {
+						return ""
+					}
+
+					ret_val = append(ret_val, shared.Get_numero_bytesb(len(processado))...)
+					ret_val = append(ret_val, processado...)
 					//ret_val += fmt.Sprintf("\nindex -> %v\n", shared.Get_bytes_numero(string(d)))
 				} else {
 					fmt.Printf("\nindex -> %v\n", shared.Get_bytes_numero(string(d)))

@@ -81,7 +81,7 @@ func handle_input(input string) string {
 }
 
 func format_output(input string) string {
-	if input == ""{
+	if input == "" {
 		return "\n"
 	}
 
@@ -101,6 +101,8 @@ func web_talk(c net.Conn) {
 		if err != nil {
 			return
 		}
+
+		fmt.Printf("cliente: %v", msg)
 
 		clean := strings.TrimSpace(msg)
 		answer := handle_input(clean)

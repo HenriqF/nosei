@@ -141,7 +141,9 @@ func Input_get_tabela(args []string) (string, error) {
 		data.Show_tabela_carregada(args[0], busca, false)
 	case hand_web:
 		res := data.Show_tabela_carregada(args[0], busca, true)
-		return res, nil
+		a := hex.EncodeToString([]byte(res))
+
+		return a, nil
 	}
 
 	return "mostrando\n", nil
