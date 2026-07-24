@@ -9,6 +9,7 @@ import (
 	"nosei/shared"
 	"os"
 	"strings"
+	"sync"
 )
 
 type hand_type int
@@ -20,7 +21,12 @@ const (
 
 var current_hand_type hand_type
 
+var input_lock sync.Mutex
+
 func handle_input(input string) string {
+	input_lock.Lock()
+	defer input_lock.Unlock()
+
 	var echo string
 	var err error
 
@@ -102,7 +108,7 @@ func web_talk(c net.Conn) {
 			return
 		}
 
-		fmt.Printf("cliente: %v", msg)
+		fmt.Printf("%v: %v", c, msg)
 
 		clean := strings.TrimSpace(msg)
 		answer := handle_input(clean)
@@ -126,7 +132,7 @@ func Web_request_hand(port string) {
 	for {
 		c, err := listener.Accept()
 		shared.Confirmar(err, "accept")
-		web_talk(c)
+		go web_talk(c)
 	}
 }
 

@@ -146,7 +146,7 @@ func Input_get_tabela(args []string) (string, error) {
 		return a, nil
 	}
 
-	return "mostrando\n", nil
+	return "\n", nil
 }
 
 func Input_deletar_entrada(args []string) (string, error) {

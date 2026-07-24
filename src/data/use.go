@@ -39,7 +39,7 @@ func Usar_banco(qual string) (string, error) {
 	}
 	//Show_tabelas()
 
-	return "usando\n", nil
+	return "ok\n", nil
 }
 
 func process_data_tipo_store(valor string, regra shared.Rule) (string, error) {
@@ -81,9 +81,9 @@ func Process_data_tipo_send(valor []byte, tipo shared.Regra_tipo) ([]byte, error
 		return bytes.TrimRight(valor, "\x00"), nil
 
 	case shared.Tipo_numero:
-		numero := strconv.Itoa(shared.Get_bytes_numerob(valor))
+		//numero := shared.Get_bytes_numerob(valor)
 
-		return []byte(numero), nil
+		return valor, nil
 	default:
 		return nil, errors.New("sigma")
 	}
@@ -164,17 +164,18 @@ func prepare_data_files(tabela_path string) (string, int, int, error) {
 // atualizar autoindex
 // primeira linha (header) incrementaa
 // adiciona: [arquivo][index da entrada][pos no arquivo]
-func update_autoindex(auto_index_path string, datafile_index int, block_pos int) (string, error) {
+// retorna o novo index.
+func update_autoindex(auto_index_path string, datafile_index int, block_pos int) (int, error) {
 	file, err := os.OpenFile(auto_index_path, os.O_RDWR, 0666)
 	if err != nil {
-		return "", err
+		return -1, err
 	}
 	defer file.Close()
 
 	bytes_index_atual := make([]byte, shared.Default_num_size)
 	_, err = io.ReadFull(file, bytes_index_atual)
 	if err != nil {
-		return "", err
+		return -1, err
 	}
 
 	index_atual := shared.Get_bytes_numero(string(bytes_index_atual))
@@ -182,21 +183,21 @@ func update_autoindex(auto_index_path string, datafile_index int, block_pos int)
 
 	_, err = file.WriteAt([]byte(new_header), 0)
 	if err != nil {
-		return "", err
+		return -1, err
 	}
 
 	new_index := shared.Get_numero_bytes(datafile_index) + string(bytes_index_atual) + shared.Get_numero_bytes(block_pos)
 	stat, err := file.Stat()
 	if err != nil {
-		return "", err
+		return -1, err
 	}
 
 	_, err = file.WriteAt([]byte(new_index), stat.Size())
 	if err != nil {
-		return "", err
+		return -1, err
 	}
 
-	return "ok\n", nil
+	return index_atual, nil
 }
 
 // retorna novo index
@@ -328,13 +329,14 @@ func Nova_entrada(nome_tabela string, dados []string) (string, error) {
 		data := shared.Split_fixed(header, shared.Default_num_size)
 
 		entrada_index, err := update_index_autoindex(autoindex_path)
+		bytes_entrada_index := shared.Get_numero_bytes(entrada_index)
 		if err != nil {
 			return "", err
 		}
 
 		datafile_index := shared.Get_bytes_numero(data[0]) * -1
 
-		new_file_header := shared.Get_numero_bytes(datafile_index) + shared.Get_numero_bytes(entrada_index)
+		new_file_header := shared.Get_numero_bytes(datafile_index) + bytes_entrada_index
 		err = overwrite_file_from_pos(autoindex_path, new_file_header, empty_pos)
 		if err != nil {
 			return "", err
@@ -351,7 +353,8 @@ func Nova_entrada(nome_tabela string, dados []string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return "feito\n", nil
+
+		return fmt.Sprintf("ok %v\n", bytes_entrada_index), nil
 	}
 
 	datafile_path, datafile_length, datafile_index, err := prepare_data_files(tabela_path)
@@ -367,10 +370,10 @@ func Nova_entrada(nome_tabela string, dados []string) (string, error) {
 	append_to_file(datafile_path, bloco_data)
 	resp, err := update_autoindex(autoindex_path, datafile_index, datafile_length)
 	if err != nil {
-		return resp, err
+		return "", err
 	}
 
-	return "feito\n", nil
+	return fmt.Sprintf("ok %v\n", shared.Get_numero_bytes(resp)), nil
 }
 
 // return:
@@ -648,7 +651,7 @@ func Update_entrada(nome_tabela string, index int, dados []string) (string, erro
 		return "", err
 	}
 
-	return "atualizado\n", nil
+	return "ok\n", nil
 }
 
 // deleta a entrada index de nome_tabela, atualiza seus metadados de arquivo no autoindex e cria um ponteiro do espaco vazio de autoindex em vazioindex
@@ -681,5 +684,5 @@ func Deletar_entrada(nome_tabela string, index int) (string, error) {
 		return "", err
 	}
 
-	return "deletado\n", nil
+	return "ok\n", nil
 }
