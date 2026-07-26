@@ -53,3 +53,36 @@ numero ->
 
 0 0 0 4 12 12 12 12 0 0 0 2 13 13
         ^
+
+
+
+
+
+
+
+	case "testepopular":
+		data.Usar_banco("beta")
+
+		init := time.Now()
+		for i := 0; i < 1000; i++ {
+			_, err := data.Nova_entrada("tabela", []string{
+				fmt.Sprintf("dados#%v", i),
+				fmt.Sprintf("%v", rand.IntN(1000)),
+			})
+
+			shared.Confirmar(err, "vai saber")
+		}
+		fmt.Println(time.Since(init))
+
+	case "testeops":
+		data.Usar_banco("beta")
+		_, err := data.Carregar_tabela("tabela")
+		shared.Confirmar(err, "deu ruim")
+
+		op, err := ops.Preparar_operacao(" 'nome#1' == dados ")
+
+		shared.Confirmar(err, "deu ruim")
+
+		err = ops.Processar_tabela_carregada("tabela", op)
+
+		shared.Confirmar(err, "deu merda")
